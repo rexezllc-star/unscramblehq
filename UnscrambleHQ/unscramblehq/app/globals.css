@@ -1,0 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+body { margin: 0; background: #ffffff; color: #111827; }
+html { scroll-behavior: smooth; }
+::selection { background: rgba(59,91,219,.16); }
+
+.container-page { max-width: 1180px; margin: 0 auto; padding: 0 20px; }
+.focus-ring { @apply focus:outline-none focus:ring-4 focus:ring-brand/15 focus:border-brand; }
+.card { @apply rounded-3xl border border-line bg-white shadow-soft; }
