@@ -7,4 +7,4 @@
 - Added ranking module.
 - Added search module.
 - Added dictionary loader.
-- Wired Unscrambler to the new engine API.
+- Prepared Unscrambler to use the new engine API.

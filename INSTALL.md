@@ -1,25 +1,27 @@
-# Install UnscrambleHQ v0.2.1
+# Install UnscrambleHQ v0.4.1
 
-Copy the `app` and `components` folders into your local project root:
+1. Copy the folders in this package into the project root:
 
-`/Users/afolabiaromiwura/Documents/GitHub/unscramblehq`
+/Users/afolabiaromiwura/Documents/GitHub/unscramblehq
 
-Allow macOS to replace matching files.
+2. Merge folders when macOS asks.
 
-Then run:
+3. Update components/Unscrambler.tsx import line:
 
-```bash
+from:
+import { groupByLength, searchWords, type SearchFilters } from '@/lib/dictionary'
+
+to:
+import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
+
+4. Run:
+
 npm run dev -- --webpack
-```
 
-Open:
+5. Test search on localhost.
 
-```text
-http://localhost:3000
-```
+6. Commit:
 
-If it looks good, commit on branch `homepage-v021`:
-
-```text
-v0.2.1 - Homepage componentization
-```
+git add .
+git commit -m "feat: add modular word engine"
+git push origin homepage-v021
