@@ -1,5 +1,5 @@
 'use client'
-
+import { BestPlays } from './BestPlays'
 import { FormEvent, useMemo, useState } from 'react'
 import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
 import { WordCard } from './WordCard'
@@ -60,6 +60,7 @@ export function Unscrambler() {
                   <p className="text-gray-600">Results for <span className="font-bold">{submitted}</span></p>
                 </div>
               </div>
+              <BestPlays results={results} />
               {lengths.map((length) => (
                 <section key={length}>
                   <h3 className="mb-4 text-xl font-extrabold">{length} Letter Words</h3>
