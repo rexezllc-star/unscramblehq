@@ -1,0 +1,4 @@
+export type { SearchFilters, SearchResult, WordEntry } from './types'
+export { searchWords, groupByLength } from './search'
+export { scrabbleScore, wordsWithFriendsScore } from './scoring'
+export { canBuildWord, normalizeLetters, countLetters } from './utils'

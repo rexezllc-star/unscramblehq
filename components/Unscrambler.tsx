@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useMemo, useState } from 'react'
-import { groupByLength, searchWords, type SearchFilters } from '@/lib/dictionary'
+import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
 import { WordCard } from './WordCard'
 
 export function Unscrambler() {
