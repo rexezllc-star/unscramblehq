@@ -10,15 +10,36 @@ type PageProps = {
   params: Promise<{ word: string }>
 }
 
+const siteUrl = 'https://unscramblehq.com'
+
 export async function generateMetadata({ params }: PageProps) {
   const { word } = await params
   const entry = getWordEntry(word)
 
   if (!entry) return { title: 'Word Not Found | UnscrambleHQ' }
 
+  const title = `${entry.word.toUpperCase()} Meaning, Definition, Scrabble Score & Words Made | UnscrambleHQ`
+  const description = `Learn the meaning of ${entry.word}, its Scrabble score, Words With Friends score, word length, related words, and useful word game details.`
+  const url = `${siteUrl}/word/${entry.word}`
+
   return {
-    title: `${entry.word.toUpperCase()} Definition, Scrabble Score & Word Details | UnscrambleHQ`,
-    description: `Learn the meaning of ${entry.word}, its Scrabble score, Words With Friends score, length, and related words.`
+    title,
+    description,
+    alternates: {
+      canonical: url
+    },
+    openGraph: {
+      title,
+      description,
+      url,
+      siteName: 'UnscrambleHQ',
+      type: 'article'
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description
+    }
   }
 }
 
@@ -29,10 +50,53 @@ export default async function WordPage({ params }: PageProps) {
   if (!entry) notFound()
 
   const related = getRelatedWords(entry.word)
+  const url = `${siteUrl}/word/${entry.word}`
+
+  const definedTermSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'DefinedTerm',
+    name: entry.word,
+    description: entry.definition,
+    url,
+    inDefinedTermSet: {
+      '@type': 'DefinedTermSet',
+      name: 'UnscrambleHQ English Word Dictionary',
+      url: siteUrl
+    }
+  }
+
+  const breadcrumbSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: siteUrl
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: entry.word.toUpperCase(),
+        item: url
+      }
+    ]
+  }
 
   return (
     <>
       <Navbar />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(definedTermSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       <main className="bg-soft/40 py-12">
         <div className="container-page">
           <div className="mb-6 text-sm font-bold text-gray-500">
@@ -68,6 +132,7 @@ export default async function WordPage({ params }: PageProps) {
           <RelatedWords words={related} />
         </div>
       </main>
+
       <Footer />
     </>
   )
@@ -81,4 +146,3 @@ function Info({ label, value }: { label: string; value: string | number }) {
     </div>
   )
 }
-
