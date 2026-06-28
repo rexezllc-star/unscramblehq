@@ -1,0 +1,24 @@
+# dependencies
+node_modules/
+**/node_modules/
+
+# Next.js
+.next/
+**/.next/
+out/
+**/out/
+
+# logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# macOS
+.DS_Store
+
+# environment
+.env
+.env.local
+.env.development.local
+.env.production.local
