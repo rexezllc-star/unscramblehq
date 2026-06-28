@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { SearchResult } from '@/lib/engine'
 
 function getQualityLabel(result: SearchResult) {
@@ -49,9 +50,9 @@ export function WordCard({ result }: { result: SearchResult }) {
 
       <div className="mt-5 flex items-center justify-between border-t border-line pt-4 text-xs font-bold text-gray-500">
         <span>Scrabble valid</span>
-        <span className="text-brand opacity-0 transition group-hover:opacity-100">
+        <Link href={`/word/${result.word}`} className="text-brand opacity-0 transition group-hover:opacity-100">
           View details →
-        </span>
+        </Link>
       </div>
     </div>
   )
