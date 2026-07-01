@@ -1,4 +1,3 @@
-cat > lib/word.ts <<'EOF'
 import { DICTIONARY } from '@/lib/dictionary'
 import { scrabbleScore, wordsWithFriendsScore } from '@/lib/engine'
 
@@ -29,4 +28,4 @@ export function getRelatedWords(word: string) {
     .filter((entry) => entry.word.startsWith(first) || entry.word.endsWith(last) || entry.word.length === cleaned.length)
     .slice(0, 9)
 }
-EOF
+
