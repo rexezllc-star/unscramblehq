@@ -1,33 +1,80 @@
 export function WordHero({ word }: { word: any }) {
   return (
-    <section className="rounded-3xl border border-line bg-white p-8 shadow-sm">
-      <div className="inline-flex rounded-full bg-brand/10 px-4 py-2 text-sm font-extrabold text-brand">
-        {word.difficulty} Word
+    <section className="overflow-hidden rounded-3xl border border-line bg-white shadow-sm">
+
+      <div className="bg-gradient-to-r from-brand to-indigo-600 px-8 py-8 text-white">
+
+        <div className="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-extrabold backdrop-blur">
+          ★★★★☆ {word.frequency || 'Common'} Word
+        </div>
+
+        <h1 className="mt-5 text-5xl font-black uppercase tracking-tight md:text-7xl">
+          {word.word}
+        </h1>
+
+        <p className="mt-5 max-w-3xl text-lg leading-8 text-white/90">
+          {word.definition}
+        </p>
+
+        <div className="mt-6 flex flex-wrap gap-3">
+
+          <button
+            type="button"
+            className="rounded-2xl bg-white px-5 py-3 font-bold text-brand transition hover:scale-105"
+            onClick={() => navigator.clipboard.writeText(word.word)}
+          >
+            Copy Word
+          </button>
+
+          <button
+            type="button"
+            className="rounded-2xl border border-white/30 px-5 py-3 font-bold transition hover:bg-white/10"
+          >
+            Share
+          </button>
+
+        </div>
+
       </div>
 
-      <h1 className="mt-5 text-5xl font-black uppercase tracking-tight text-ink md:text-7xl">
-        {word.word}
-      </h1>
+      <div className="grid gap-4 p-8 md:grid-cols-3 lg:grid-cols-6">
 
-      <p className="mt-5 max-w-3xl text-lg leading-8 text-gray-600">
-        {word.definition}
-      </p>
+        <Stat label="Length" value={`${word.length}`} />
 
-      <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Length" value={`${word.length} letters`} />
         <Stat label="Scrabble" value={word.score} />
+
         <Stat label="WWF" value={word.wwfScore} />
+
         <Stat label="Starts" value={word.startsWith.toUpperCase()} />
+
+        <Stat label="Ends" value={word.endsWith.toUpperCase()} />
+
+        <Stat label="Difficulty" value={word.difficulty} />
+
       </div>
+
     </section>
   )
 }
 
-function Stat({ label, value }: { label: string; value: string | number }) {
+function Stat({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) {
   return (
-    <div className="rounded-2xl border border-line bg-soft p-4">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-1 text-2xl font-black text-ink">{value}</p>
+    <div className="rounded-2xl border border-line bg-soft p-4 text-center">
+
+      <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+        {label}
+      </p>
+
+      <p className="mt-2 text-3xl font-black text-ink">
+        {value}
+      </p>
+
     </div>
   )
 }

@@ -1,3 +1,4 @@
+cat > components/word/RelatedWords.tsx <<'EOF'
 import Link from 'next/link'
 
 export function RelatedWords({ words }: { words: { word: string; definition: string }[] }) {
@@ -21,3 +22,4 @@ export function RelatedWords({ words }: { words: { word: string; definition: str
     </section>
   )
 }
+EOF
