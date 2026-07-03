@@ -1,7 +1,8 @@
 'use client'
 
-import { FormEvent, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { BestPlays } from './BestPlays'
+import { SearchBox } from './SearchBox'
 import { WordCard } from './WordCard'
 import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
 import { DICTIONARY } from '@/lib/dictionary'
@@ -17,7 +18,8 @@ export function Unscrambler() {
 
     return DICTIONARY
       .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
-      .slice(0, 6)
+      .map((entry) => entry.word)
+      .slice(0, 8)
   }, [letters, submitted])
 
   const results = useMemo(() => searchWords(submitted, filters), [submitted, filters])
@@ -28,14 +30,8 @@ export function Unscrambler() {
     setFilters((current) => ({ ...current, [key]: value || undefined }))
   }
 
-  function submit(e: FormEvent) {
-    e.preventDefault()
-    setSubmitted(letters)
-  }
-
-  function chooseSuggestion(word: string) {
-    setLetters(word)
-    setSubmitted(word)
+  function submitSearch(value: string) {
+    setSubmitted(value)
   }
 
   function clearSearch() {
@@ -46,35 +42,13 @@ export function Unscrambler() {
   return (
     <section id="tool" className="container-page -mt-6">
       <div className="card overflow-visible p-5 md:p-8">
-        <form onSubmit={submit} className="grid gap-4 md:grid-cols-[1fr_auto_auto]">
-          <div className="relative">
-            <input
-              value={letters}
-              onChange={(e) => setLetters(e.target.value)}
-              placeholder="Enter letters..."
-              className="focus-ring h-16 w-full rounded-2xl border border-line px-5 text-xl font-semibold tracking-wide"
-            />
-
-            {suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-20 z-30 overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
-                {suggestions.map((item) => (
-                  <button
-                    key={item.word}
-                    type="button"
-                    onClick={() => chooseSuggestion(item.word)}
-                    className="flex w-full items-center justify-between px-5 py-3 text-left hover:bg-soft"
-                  >
-                    <span className="font-extrabold uppercase text-ink">{item.word}</span>
-                    <span className="text-sm text-gray-500">Search</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <button className="h-16 rounded-2xl bg-brand px-8 font-bold text-white shadow-soft hover:bg-brand/95">
-            Unscramble
-          </button>
+        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+          <SearchBox
+            value={letters}
+            onChange={setLetters}
+            onSubmit={submitSearch}
+            suggestions={suggestions}
+          />
 
           <button
             type="button"
@@ -83,7 +57,7 @@ export function Unscrambler() {
           >
             Clear
           </button>
-        </form>
+        </div>
 
         <p className="mt-3 text-sm text-gray-500">
           Tip: use <span className="font-bold">?</span> as a blank tile.
@@ -115,7 +89,11 @@ export function Unscrambler() {
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_300px]">
         <main>
-          {!submitted ? <EmptyState /> : results.length === 0 ? <NoResults /> : (
+          {!submitted ? (
+            <EmptyState />
+          ) : results.length === 0 ? (
+            <NoResults />
+          ) : (
             <div className="grid gap-8">
               <div>
                 <h2 className="text-2xl font-extrabold">{results.length} words found</h2>
@@ -150,7 +128,15 @@ export function Unscrambler() {
   )
 }
 
-function FilterInput({ label, onChange, type = 'text' }: { label: string; type?: string; onChange: (value: string) => void }) {
+function FilterInput({
+  label,
+  onChange,
+  type = 'text',
+}: {
+  label: string
+  type?: string
+  onChange: (value: string) => void
+}) {
   return (
     <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-gray-500">
       {label}
@@ -177,7 +163,9 @@ function EmptyState() {
   return (
     <div className="rounded-3xl border border-dashed border-line bg-soft p-10 text-center">
       <h2 className="text-2xl font-extrabold">Enter letters to begin</h2>
-      <p className="mt-2 text-gray-600">Your words will be grouped by length with score, definition, and copy actions.</p>
+      <p className="mt-2 text-gray-600">
+        Your words will be grouped by length with score, definition, and copy actions.
+      </p>
     </div>
   )
 }
@@ -186,7 +174,9 @@ function NoResults() {
   return (
     <div className="rounded-3xl border border-line bg-soft p-10 text-center">
       <h2 className="text-2xl font-extrabold">No words found</h2>
-      <p className="mt-2 text-gray-600">Try fewer filters, add a blank tile, or use more letters.</p>
+      <p className="mt-2 text-gray-600">
+        Try fewer filters, add a blank tile, or use more letters.
+      </p>
     </div>
   )
 }
