@@ -247,3 +247,37 @@ export function groupByLength(results: SearchResult[]) {
     return acc
   }, {})
 }
+let cachedWords: string[] | null = null
+let cachedWordSet: Set<string> | null = null
+
+export function getDictionary(): string[] {
+  if (!cachedWords) {
+    cachedWords = DICTIONARY
+      .map((entry) => entry.word.trim().toLowerCase())
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b))
+  }
+
+  return cachedWords
+}
+
+export function getDictionaryEntries(): WordEntry[] {
+  return DICTIONARY
+}
+
+export function getWordSet(): Set<string> {
+  if (!cachedWordSet) {
+    cachedWordSet = new Set(getDictionary())
+  }
+
+  return cachedWordSet
+}
+
+export function hasWord(word: string): boolean {
+  return getWordSet().has(word.trim().toLowerCase())
+}
+
+export function getWord(word: string): WordEntry | null {
+  const normalized = word.trim().toLowerCase()
+  return DICTIONARY.find((entry) => entry.word === normalized) || null
+}
