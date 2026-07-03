@@ -1,14 +1,7 @@
+import Link from 'next/link'
 import { Breadcrumbs } from '@/components/seo/Breadcrumbs'
 import { PageStats } from '@/components/seo/PageStats'
 import { PageFaq } from '@/components/seo/PageFaq'
-import Link from 'next/link'
-<Breadcrumbs
-  items={[
-    { title: 'Home', href: '/' },
-    { title: 'Word Lists' },
-    { title },
-  ]}
-/>
 
 export type SeoRelatedLink = {
   title: string
@@ -28,10 +21,19 @@ export function SeoWordPage({
   words,
   relatedLinks = [],
 }: SeoWordPageProps) {
- const uniqueWords = Array.from(new Set(words))
-const visibleWords = uniqueWords.slice(0, 300)
+  const uniqueWords = Array.from(new Set(words))
+  const visibleWords = uniqueWords.slice(0, 300)
+
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
+      <Breadcrumbs
+        items={[
+          { title: 'Home', href: '/' },
+          { title: 'Word Lists' },
+          { title },
+        ]}
+      />
+
       <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
         <p className="mb-3 text-sm font-semibold uppercase tracking-wide text-blue-600">
           UnscrambleHQ Word List
@@ -46,9 +48,11 @@ const visibleWords = uniqueWords.slice(0, 300)
         </p>
 
         <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-700">
-        {uniqueWords.length} matching words found
+          {uniqueWords.length} matching words found
         </div>
       </section>
+
+      <PageStats words={visibleWords} />
 
       <section className="mt-10">
         <h2 className="text-2xl font-black text-slate-950">Word List</h2>
@@ -71,7 +75,7 @@ const visibleWords = uniqueWords.slice(0, 300)
           </div>
         )}
 
-       {uniqueWords.length > visibleWords.length && (
+        {uniqueWords.length > visibleWords.length && (
           <p className="mt-4 text-sm text-slate-500">
             Showing the first {visibleWords.length} results.
           </p>
@@ -98,35 +102,7 @@ const visibleWords = uniqueWords.slice(0, 300)
         </section>
       )}
 
-      <section className="mt-12 rounded-3xl border border-slate-200 bg-white p-6">
-        <h2 className="text-2xl font-black text-slate-950">
-          Frequently Asked Questions
-        </h2>
-
-        <div className="mt-5 space-y-5">
-          <div>
-            <h3 className="font-bold text-slate-900">
-              What is this word list used for?
-            </h3>
-            <p className="mt-2 text-slate-600">
-              This list helps with word games, anagrams, Scrabble-style games,
-              Wordle-style puzzles, crossword clues, and general vocabulary
-              searches.
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-bold text-slate-900">
-              How are these words selected?
-            </h3>
-            <p className="mt-2 text-slate-600">
-              Words are selected from the UnscrambleHQ dictionary and filtered
-              using the page criteria, such as length, prefix, suffix, or
-              contained letters.
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageFaq title={title} words={visibleWords} />
     </main>
   )
 }
