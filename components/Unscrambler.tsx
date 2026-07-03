@@ -5,6 +5,7 @@ import { BestPlays } from './BestPlays'
 import { SearchBox } from './SearchBox'
 import { WordCard } from './WordCard'
 import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
+import { DICTIONARY } from '@/lib/dictionary'
 
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
@@ -14,12 +15,18 @@ export function Unscrambler() {
   const suggestions = useMemo(() => {
     const cleaned = letters.toLowerCase().replace(/[^a-z?]/g, '')
 
-    if (cleaned.length < 2 || submitted === letters) return []
+    if (cleaned.length < 2) return []
 
-    return searchWords(cleaned, { sortBy: 'score' })
-      .map((result) => result.word)
-      .slice(0, 8)
-  }, [letters, submitted])
+    const anagramSuggestions = searchWords(cleaned, { sortBy: 'score' }).map(
+      (result) => result.word
+    )
+
+    const prefixSuggestions = DICTIONARY
+      .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
+      .map((entry) => entry.word)
+
+    return Array.from(new Set([...anagramSuggestions, ...prefixSuggestions])).slice(0, 8)
+  }, [letters])
 
   const results = useMemo(() => searchWords(submitted, filters), [submitted, filters])
   const grouped = useMemo(() => groupByLength(results), [results])
@@ -106,7 +113,6 @@ export function Unscrambler() {
               {lengths.map((length) => (
                 <section key={length}>
                   <h3 className="mb-4 text-xl font-extrabold">{length} Letter Words</h3>
-
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {grouped[length].map((result) => (
                       <WordCard key={result.word} result={result} />
@@ -128,19 +134,10 @@ export function Unscrambler() {
   )
 }
 
-function FilterInput({
-  label,
-  onChange,
-  type = 'text',
-}: {
-  label: string
-  type?: string
-  onChange: (value: string) => void
-}) {
+function FilterInput({ label, onChange, type = 'text' }: { label: string; type?: string; onChange: (value: string) => void }) {
   return (
     <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-gray-500">
       {label}
-
       <input
         type={type}
         min={type === 'number' ? 1 : undefined}
