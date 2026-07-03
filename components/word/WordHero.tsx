@@ -1,8 +1,12 @@
 'use client'
 
-import { useMemo, useState, KeyboardEvent } from 'react'
+import { KeyboardEvent, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DICTIONARY } from '@/lib/dictionary'
+
+type DictionaryEntry = {
+  word?: string
+}
 
 export function WordHero({ word }: { word: any }) {
   const router = useRouter()
@@ -10,20 +14,29 @@ export function WordHero({ word }: { word: any }) {
   const [isOpen, setIsOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
 
+  const allWords = useMemo(() => {
+    return DICTIONARY
+      .map((entry: string | DictionaryEntry) =>
+        typeof entry === 'string' ? entry : entry.word
+      )
+      .filter((item): item is string => Boolean(item))
+  }, [])
+
   const suggestions = useMemo(() => {
     const cleaned = query.toLowerCase().replace(/[^a-z]/g, '')
-    if (cleaned.length < 2) return []
 
-    return DICTIONARY
-      .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
-      .map((entry) => entry.word)
+    if (cleaned.length < 1) return []
+
+    return allWords
+      .filter((item) => item.toLowerCase().startsWith(cleaned))
       .slice(0, 8)
-  }, [query])
+  }, [query, allWords])
 
   function goToWord(value: string) {
     const cleaned = value.toLowerCase().replace(/[^a-z]/g, '')
     if (!cleaned) return
 
+    setQuery(cleaned)
     setIsOpen(false)
     setActiveIndex(-1)
     router.push(`/word/${cleaned}`)
@@ -33,17 +46,27 @@ export function WordHero({ word }: { word: any }) {
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       setIsOpen(true)
+
+      if (suggestions.length === 0) return
+
       setActiveIndex((current) =>
         current < suggestions.length - 1 ? current + 1 : 0
       )
+
+      return
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault()
       setIsOpen(true)
+
+      if (suggestions.length === 0) return
+
       setActiveIndex((current) =>
         current > 0 ? current - 1 : suggestions.length - 1
       )
+
+      return
     }
 
     if (event.key === 'Enter') {
@@ -54,6 +77,8 @@ export function WordHero({ word }: { word: any }) {
       } else {
         goToWord(query)
       }
+
+      return
     }
 
     if (event.key === 'Escape') {
@@ -80,7 +105,7 @@ export function WordHero({ word }: { word: any }) {
 
   return (
     <section className="overflow-visible rounded-3xl border border-line bg-white shadow-sm">
-      <div className="bg-gradient-to-r from-brand to-indigo-600 px-8 py-8 text-white">
+      <div className="overflow-visible bg-gradient-to-r from-brand to-indigo-600 px-8 py-8 text-white">
         <div className="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-extrabold backdrop-blur">
           ★★★★☆ {word.frequency || 'Common'} Word
         </div>
@@ -93,7 +118,7 @@ export function WordHero({ word }: { word: any }) {
           {word.definition}
         </p>
 
-        <div className="relative mt-6 max-w-2xl">
+        <div className="relative z-50 mt-6 max-w-2xl overflow-visible">
           <div className="grid gap-3 md:grid-cols-[1fr_auto]">
             <input
               value={query}
@@ -117,21 +142,29 @@ export function WordHero({ word }: { word: any }) {
             </button>
           </div>
 
-          {isOpen && suggestions.length > 0 && (
-            <div className="absolute left-0 right-0 top-16 z-50 overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-soft">
-              {suggestions.map((suggestion, index) => (
-                <button
-                  key={suggestion}
-                  type="button"
-                  onMouseDown={() => goToWord(suggestion)}
-                  className={`flex w-full items-center justify-between px-5 py-3 text-left ${
-                    index === activeIndex ? 'bg-soft' : 'hover:bg-soft'
-                  }`}
-                >
-                  <span className="font-extrabold uppercase">{suggestion}</span>
-                  <span className="text-sm text-gray-500">Open</span>
-                </button>
-              ))}
+          {isOpen && query.length > 0 && (
+            <div className="absolute left-0 right-0 top-16 z-[9999] overflow-hidden rounded-2xl border border-line bg-white text-ink shadow-soft">
+              {suggestions.length > 0 ? (
+                suggestions.map((suggestion, index) => (
+                  <button
+                    key={`${suggestion}-${index}`}
+                    type="button"
+                    onMouseDown={() => goToWord(suggestion)}
+                    className={`flex w-full items-center justify-between px-5 py-3 text-left ${
+                      index === activeIndex ? 'bg-soft' : 'hover:bg-soft'
+                    }`}
+                  >
+                    <span className="font-extrabold uppercase">
+                      {suggestion}
+                    </span>
+                    <span className="text-sm text-gray-500">Open</span>
+                  </button>
+                ))
+              ) : (
+                <div className="px-5 py-4 text-sm font-bold text-gray-500">
+                  No suggestions found for “{query}”
+                </div>
+              )}
             </div>
           )}
         </div>
