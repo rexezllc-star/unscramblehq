@@ -1,7 +1,13 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { buildSeoPage } from '@/lib/pageBuilder'
 import { SeoWordPage } from '@/components/seo/SeoWordPage'
+import {
+  buildRoutePage,
+  parseContainsSlug,
+  parseEndsWithSlug,
+  parseLengthSlug,
+  parseStartsWithSlug,
+} from '@/lib/routeFactory'
 
 type PageProps = {
   params: Promise<{
@@ -9,34 +15,98 @@ type PageProps = {
   }>
 }
 
-function parseLengthSlug(slug: string) {
-  const match = slug.match(/^([2-9]|1[0-5])-letter-words$/)
+function resolveRoute(slug: string) {
+  const length = parseLengthSlug(slug)
+  if (length) {
+    return {
+      type: 'length' as const,
+      value: length,
+    }
+  }
 
-  if (!match) return null
+  const startsWith = parseStartsWithSlug(slug)
+  if (startsWith) {
+    return {
+      type: 'startsWith' as const,
+      value: startsWith,
+    }
+  }
 
-  return Number(match[1])
+  const endsWith = parseEndsWithSlug(slug)
+  if (endsWith) {
+    return {
+      type: 'endsWith' as const,
+      value: endsWith,
+    }
+  }
+
+  const contains = parseContainsSlug(slug)
+  if (contains) {
+    return {
+      type: 'contains' as const,
+      value: contains,
+    }
+  }
+
+  return null
 }
 
 export async function generateStaticParams() {
-  return Array.from({ length: 14 }, (_, index) => ({
+  const lengths = Array.from({ length: 14 }, (_, index) => ({
     slug: `${index + 2}-letter-words`,
   }))
+
+  const startingLetters = 'abcdefghijklmnopqrstuvwxyz'.split('').map((letter) => ({
+    slug: `words-starting-with-${letter}`,
+  }))
+
+  const commonEndings = [
+    'ed',
+    'er',
+    'ing',
+    'ly',
+    'tion',
+    'ness',
+    'able',
+    'ment',
+    'est',
+    'ful',
+  ].map((ending) => ({
+    slug: `words-ending-in-${ending}`,
+  }))
+
+  const commonContains = [
+    'qu',
+    'th',
+    'ch',
+    'sh',
+    'ph',
+    'ck',
+    'oo',
+    'ee',
+    'ai',
+    'ou',
+  ].map((letters) => ({
+    slug: `words-containing-${letters}`,
+  }))
+
+  return [
+    ...lengths,
+    ...startingLetters,
+    ...commonEndings,
+    ...commonContains,
+  ]
 }
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params
-  const length = parseLengthSlug(slug)
+  const route = resolveRoute(slug)
 
-  if (!length) {
-    return {}
-  }
+  if (!route) return {}
 
-  const page = buildSeoPage({
-    type: 'length',
-    value: length,
-  })
+  const page = buildRoutePage(route.type, route.value)
 
   return {
     title: page.title,
@@ -55,16 +125,13 @@ export async function generateMetadata({
 
 export default async function SeoSlugPage({ params }: PageProps) {
   const { slug } = await params
-  const length = parseLengthSlug(slug)
+  const route = resolveRoute(slug)
 
-  if (!length) {
+  if (!route) {
     notFound()
   }
 
-  const page = buildSeoPage({
-    type: 'length',
-    value: length,
-  })
+  const page = buildRoutePage(route.type, route.value)
 
   if (!page.words.length) {
     notFound()
