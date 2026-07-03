@@ -1,87 +1,8 @@
 'use client'
 
-import { KeyboardEvent, useMemo, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { DICTIONARY } from '@/lib/dictionary'
-
-type DictionaryEntry = {
-  word?: string
-}
-
 export function WordHero({ word }: { word: any }) {
-  const router = useRouter()
-  const [query, setQuery] = useState('')
-  const [activeIndex, setActiveIndex] = useState(-1)
-
-  const allWords = useMemo(() => {
-    return DICTIONARY
-      .map((entry: string | DictionaryEntry) =>
-        typeof entry === 'string' ? entry : entry.word
-      )
-      .filter((item): item is string => Boolean(item))
-  }, [])
-
-  const suggestions = useMemo(() => {
-    const cleaned = query.toLowerCase().replace(/[^a-z]/g, '')
-
-    if (cleaned.length < 1) return []
-
-    return allWords
-      .filter((item) => item.toLowerCase().startsWith(cleaned))
-      .slice(0, 8)
-  }, [query, allWords])
-
-  function goToWord(value: string) {
-    const cleaned = value.toLowerCase().replace(/[^a-z]/g, '')
-    if (!cleaned) return
-
-    setQuery(cleaned)
-    setActiveIndex(-1)
-    router.push(`/word/${cleaned}`)
-  }
-
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
-    if (event.key === 'ArrowDown') {
-      event.preventDefault()
-
-      if (suggestions.length === 0) return
-
-      setActiveIndex((current) =>
-        current < suggestions.length - 1 ? current + 1 : 0
-      )
-
-      return
-    }
-
-    if (event.key === 'ArrowUp') {
-      event.preventDefault()
-
-      if (suggestions.length === 0) return
-
-      setActiveIndex((current) =>
-        current > 0 ? current - 1 : suggestions.length - 1
-      )
-
-      return
-    }
-
-    if (event.key === 'Enter') {
-      event.preventDefault()
-
-      if (activeIndex >= 0 && suggestions[activeIndex]) {
-        goToWord(suggestions[activeIndex])
-      } else {
-        goToWord(query)
-      }
-
-      return
-    }
-
-    if (event.key === 'Escape') {
-      setQuery('')
-      setActiveIndex(-1)
-    }
-  }
+  const scrabbleScore = word.score ?? word.scrabble ?? '—'
+  const wwfScore = word.wwfScore ?? word.wwf ?? '—'
 
   function copyWord() {
     navigator.clipboard?.writeText(word.word)
@@ -100,7 +21,7 @@ export function WordHero({ word }: { word: any }) {
   }
 
   return (
-    <section className="rounded-3xl border border-line bg-white shadow-sm">
+    <section className="overflow-hidden rounded-3xl border border-line bg-white shadow-sm">
       <div className="bg-gradient-to-r from-brand to-indigo-600 px-8 py-8 text-white">
         <div className="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-extrabold backdrop-blur">
           ★★★★☆ {word.frequency || 'Common'} Word
@@ -111,7 +32,56 @@ export function WordHero({ word }: { word: any }) {
         </h1>
 
         <p className="mt-5 max-w-3xl text-lg leading-8 text-white/90">
-          {word.definition}
+          {word.definition || 'Definition coming soon.'}
         </p>
 
-      
+        <div className="mt-6 flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={copyWord}
+            className="rounded-2xl bg-white px-5 py-3 font-bold text-brand transition hover:scale-105"
+          >
+            Copy Word
+          </button>
+
+          <button
+            type="button"
+            onClick={shareWord}
+            className="rounded-2xl border border-white/30 px-5 py-3 font-bold text-white transition hover:bg-white/10"
+          >
+            Share
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-4 p-8 md:grid-cols-3 lg:grid-cols-6">
+        <Stat label="Length" value={word.length} />
+        <Stat label="Scrabble" value={scrabbleScore} />
+        <Stat label="WWF" value={wwfScore} />
+        <Stat label="Starts" value={word.startsWith?.toUpperCase()} />
+        <Stat label="Ends" value={word.endsWith?.toUpperCase()} />
+        <Stat label="Difficulty" value={word.difficulty} />
+      </div>
+    </section>
+  )
+}
+
+function Stat({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number | undefined
+}) {
+  return (
+    <div className="rounded-2xl border border-line bg-soft p-4 text-center">
+      <p className="text-xs font-black uppercase tracking-widest text-gray-500">
+        {label}
+      </p>
+
+      <p className="mt-2 text-3xl font-black text-ink">
+        {value || '—'}
+      </p>
+    </div>
+  )
+}
