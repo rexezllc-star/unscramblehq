@@ -115,7 +115,6 @@ export function WordHero({ word }: { word: any }) {
         </p>
 
         <div className="mt-6 max-w-2xl rounded-3xl bg-white/10 p-3 backdrop-blur">
-          <
             <div className="mt-4 rounded-xl bg-yellow-200 p-4 font-black text-black">
   TEST DROPDOWN AREA — query: {query}
 </div>
