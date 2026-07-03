@@ -1,4 +1,14 @@
+import { Breadcrumbs } from '@/components/seo/Breadcrumbs'
+import { PageStats } from '@/components/seo/PageStats'
+import { PageFaq } from '@/components/seo/PageFaq'
 import Link from 'next/link'
+<Breadcrumbs
+  items={[
+    { title: 'Home', href: '/' },
+    { title: 'Word Lists' },
+    { title },
+  ]}
+/>
 
 export type SeoRelatedLink = {
   title: string
