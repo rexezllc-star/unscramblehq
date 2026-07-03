@@ -5,7 +5,6 @@ import { BestPlays } from './BestPlays'
 import { SearchBox } from './SearchBox'
 import { WordCard } from './WordCard'
 import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
-import { DICTIONARY } from '@/lib/dictionary'
 
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
@@ -13,12 +12,12 @@ export function Unscrambler() {
   const [filters, setFilters] = useState<SearchFilters>({ sortBy: 'longest' })
 
   const suggestions = useMemo(() => {
-    const cleaned = letters.toLowerCase().replace(/[^a-z]/g, '')
+    const cleaned = letters.toLowerCase().replace(/[^a-z?]/g, '')
+
     if (cleaned.length < 2 || submitted === letters) return []
 
-    return DICTIONARY
-      .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
-      .map((entry) => entry.word)
+    return searchWords(cleaned, { sortBy: 'score' })
+      .map((result) => result.word)
       .slice(0, 8)
   }, [letters, submitted])
 
@@ -107,6 +106,7 @@ export function Unscrambler() {
               {lengths.map((length) => (
                 <section key={length}>
                   <h3 className="mb-4 text-xl font-extrabold">{length} Letter Words</h3>
+
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {grouped[length].map((result) => (
                       <WordCard key={result.word} result={result} />
@@ -140,6 +140,7 @@ function FilterInput({
   return (
     <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-gray-500">
       {label}
+
       <input
         type={type}
         min={type === 'number' ? 1 : undefined}

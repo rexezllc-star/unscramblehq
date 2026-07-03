@@ -18,13 +18,9 @@ export function SearchBox({
   const [isOpen, setIsOpen] = useState(false)
   const [activeIndex, setActiveIndex] = useState(-1)
 
-  const filteredSuggestions = useMemo(() => {
-    const cleaned = value.toLowerCase().replace(/[^a-z]/g, '')
-    if (!cleaned) return []
-
-    return suggestions
-      .filter((word) => word.toLowerCase().startsWith(cleaned))
-      .slice(0, 8)
+  const visibleSuggestions = useMemo(() => {
+    if (!value.trim()) return []
+    return suggestions.slice(0, 8)
   }, [value, suggestions])
 
   function handleSubmit(searchValue: string) {
@@ -41,26 +37,34 @@ export function SearchBox({
     if (event.key === 'ArrowDown') {
       event.preventDefault()
       setIsOpen(true)
+
+      if (visibleSuggestions.length === 0) return
+
       setActiveIndex((current) =>
-        current < filteredSuggestions.length - 1 ? current + 1 : 0
+        current < visibleSuggestions.length - 1 ? current + 1 : 0
       )
+
       return
     }
 
     if (event.key === 'ArrowUp') {
       event.preventDefault()
       setIsOpen(true)
+
+      if (visibleSuggestions.length === 0) return
+
       setActiveIndex((current) =>
-        current > 0 ? current - 1 : filteredSuggestions.length - 1
+        current > 0 ? current - 1 : visibleSuggestions.length - 1
       )
+
       return
     }
 
     if (event.key === 'Enter') {
       event.preventDefault()
 
-      if (isOpen && activeIndex >= 0 && filteredSuggestions[activeIndex]) {
-        handleSubmit(filteredSuggestions[activeIndex])
+      if (isOpen && activeIndex >= 0 && visibleSuggestions[activeIndex]) {
+        handleSubmit(visibleSuggestions[activeIndex])
       } else {
         handleSubmit(value)
       }
@@ -99,11 +103,11 @@ export function SearchBox({
         </button>
       </div>
 
-      {isOpen && filteredSuggestions.length > 0 && (
+      {isOpen && visibleSuggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-20 z-30 overflow-hidden rounded-2xl border border-line bg-white shadow-soft">
-          {filteredSuggestions.map((suggestion, index) => (
+          {visibleSuggestions.map((suggestion, index) => (
             <button
-              key={suggestion}
+              key={`${suggestion}-${index}`}
               type="button"
               onMouseDown={() => handleSubmit(suggestion)}
               className={`flex w-full items-center justify-between px-5 py-3 text-left ${
@@ -113,6 +117,7 @@ export function SearchBox({
               <span className="font-extrabold uppercase text-ink">
                 {suggestion}
               </span>
+
               <span className="text-sm text-gray-500">Search</span>
             </button>
           ))}
