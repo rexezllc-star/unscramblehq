@@ -18,8 +18,8 @@ export function SeoWordPage({
   words,
   relatedLinks = [],
 }: SeoWordPageProps) {
-  const visibleWords = words.slice(0, 300)
-
+ const uniqueWords = Array.from(new Set(words))
+const visibleWords = uniqueWords.slice(0, 300)
   return (
     <main className="mx-auto max-w-6xl px-6 py-12">
       <section className="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -36,7 +36,7 @@ export function SeoWordPage({
         </p>
 
         <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm font-semibold text-slate-700">
-          {words.length} matching words found
+        {uniqueWords.length} matching words found
         </div>
       </section>
 
@@ -61,7 +61,7 @@ export function SeoWordPage({
           </div>
         )}
 
-        {words.length > visibleWords.length && (
+       {uniqueWords.length > visibleWords.length && (
           <p className="mt-4 text-sm text-slate-500">
             Showing the first {visibleWords.length} results.
           </p>

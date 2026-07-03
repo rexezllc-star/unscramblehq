@@ -1,3 +1,8 @@
+import {
+  CONTAINS_COMBINATIONS,
+  ENDING_SUFFIXES,
+  STARTING_PREFIXES,
+} from '@/lib/seoRouteLists'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { SeoWordPage } from '@/components/seo/SeoWordPage'
@@ -50,43 +55,20 @@ function resolveRoute(slug: string) {
 
   return null
 }
-
 export async function generateStaticParams() {
   const lengths = Array.from({ length: 14 }, (_, index) => ({
     slug: `${index + 2}-letter-words`,
   }))
 
-  const startingLetters = 'abcdefghijklmnopqrstuvwxyz'.split('').map((letter) => ({
-    slug: `words-starting-with-${letter}`,
+  const startingLetters = STARTING_PREFIXES.map((prefix) => ({
+    slug: `words-starting-with-${prefix}`,
   }))
 
-  const commonEndings = [
-    'ed',
-    'er',
-    'ing',
-    'ly',
-    'tion',
-    'ness',
-    'able',
-    'ment',
-    'est',
-    'ful',
-  ].map((ending) => ({
+  const commonEndings = ENDING_SUFFIXES.map((ending) => ({
     slug: `words-ending-in-${ending}`,
   }))
 
-  const commonContains = [
-    'qu',
-    'th',
-    'ch',
-    'sh',
-    'ph',
-    'ck',
-    'oo',
-    'ee',
-    'ai',
-    'ou',
-  ].map((letters) => ({
+  const commonContains = CONTAINS_COMBINATIONS.map((letters) => ({
     slug: `words-containing-${letters}`,
   }))
 
@@ -97,7 +79,6 @@ export async function generateStaticParams() {
     ...commonContains,
   ]
 }
-
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
