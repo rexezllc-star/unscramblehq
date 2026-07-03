@@ -1,13 +1,48 @@
 import type { MetadataRoute } from 'next'
+import {
+  CONTAINS_COMBINATIONS,
+  ENDING_SUFFIXES,
+  STARTING_PREFIXES,
+} from '@/lib/seoRouteLists'
 
-const base = 'https://unscramblehq.com'
+const SITE_URL = 'https://www.unscramblehq.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const routes = ['', '/anagram-solver', '/word-finder', '/wordle-helper', '/scrabble-word-finder']
-  return routes.map((route) => ({
-    url: `${base}${route}`,
+  const staticPages = [
+    '',
+    '/word-finder',
+    '/anagram-solver',
+    '/scrabble-word-finder',
+    '/wordle-helper',
+  ]
+
+  const lengthPages = Array.from(
+    { length: 14 },
+    (_, index) => `/${index + 2}-letter-words`
+  )
+
+  const startsWithPages = STARTING_PREFIXES.map(
+    (prefix) => `/words-starting-with-${prefix}`
+  )
+
+  const endingPages = ENDING_SUFFIXES.map(
+    (suffix) => `/words-ending-in-${suffix}`
+  )
+
+  const containsPages = CONTAINS_COMBINATIONS.map(
+    (letters) => `/words-containing-${letters}`
+  )
+
+  return [
+    ...staticPages,
+    ...lengthPages,
+    ...startsWithPages,
+    ...endingPages,
+    ...containsPages,
+  ].map((path) => ({
+    url: `${SITE_URL}${path}`,
     lastModified: new Date(),
-    changeFrequency: route === '' ? 'daily' : 'weekly',
-    priority: route === '' ? 1 : 0.8
+    changeFrequency: 'weekly',
+    priority: path === '' ? 1 : 0.7,
   }))
 }
