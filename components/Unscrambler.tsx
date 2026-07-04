@@ -15,17 +15,14 @@ export function Unscrambler() {
   const suggestions = useMemo(() => {
     const cleaned = letters.toLowerCase().replace(/[^a-z?]/g, '')
 
-    if (cleaned.length < 2) return []
-
-    const anagramSuggestions = searchWords(cleaned, { sortBy: 'score' }).map(
-      (result) => result.word
-    )
+    if (cleaned.length < 2 || cleaned.includes('?')) return []
 
     const prefixSuggestions = DICTIONARY
       .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
+      .slice(0, 6)
       .map((entry) => entry.word)
 
-    return Array.from(new Set([...anagramSuggestions, ...prefixSuggestions])).slice(0, 8)
+    return Array.from(new Set(prefixSuggestions)).slice(0, 6)
   }, [letters])
 
   const results = useMemo(() => searchWords(submitted, filters), [submitted, filters])
@@ -48,7 +45,7 @@ export function Unscrambler() {
   return (
     <section id="tool" className="container-page -mt-6">
       <div className="card overflow-visible p-5 md:p-8">
-        <div className="grid gap-4 md:grid-cols-[1fr_auto]">
+        <div className="grid gap-3">
           <SearchBox
             value={letters}
             onChange={setLetters}
@@ -59,7 +56,7 @@ export function Unscrambler() {
           <button
             type="button"
             onClick={clearSearch}
-            className="h-16 rounded-2xl border border-line px-8 font-bold text-gray-700 hover:border-brand hover:text-brand"
+            className="h-14 rounded-2xl border border-line px-8 font-bold text-gray-700 hover:border-brand hover:text-brand md:h-16"
           >
             Clear
           </button>
