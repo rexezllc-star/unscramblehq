@@ -1,4 +1,4 @@
-import { PRODUCTION_WORDS } from '@/data/dictionary'
+import { PRODUCTION_WORDS } from '@/data/dictionary/words'
 
 export type WordEntry = {
   word: string
@@ -6,7 +6,6 @@ export type WordEntry = {
 }
 
 export const DICTIONARY: WordEntry[] = PRODUCTION_WORDS
-
 export const letterScores: Record<string, number> = {
   a: 1, e: 1, i: 1, o: 1, u: 1, l: 1, n: 1, s: 1, t: 1, r: 1,
   d: 2, g: 2,
