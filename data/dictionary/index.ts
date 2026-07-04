@@ -1,0 +1,1 @@
+export { PRODUCTION_WORDS } from './words'

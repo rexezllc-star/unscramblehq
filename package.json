@@ -12,7 +12,8 @@
     "@next/third-parties": "latest",
     "next": "latest",
     "react": "latest",
-    "react-dom": "latest"
+    "react-dom": "latest",
+    "word-list": "^4.1.0"
   },
   "devDependencies": {
     "@types/node": "latest",

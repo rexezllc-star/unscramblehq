@@ -119,7 +119,7 @@ export default async function SeoSlugPage({ params }: PageProps) {
     <SeoWordPage
       title={page.h1}
       description={page.description}
-      words={page.words}
+     words={page.words.slice(0, 100)}
       relatedLinks={page.relatedLinks}
     />
   )
