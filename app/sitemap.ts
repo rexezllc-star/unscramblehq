@@ -1,13 +1,11 @@
 import type { MetadataRoute } from 'next'
-import {
-  CONTAINS_COMBINATIONS,
-  ENDING_SUFFIXES,
-  STARTING_PREFIXES,
-} from '@/lib/seoRouteLists'
+import { getSeoInventory } from '@/lib/seoInventory'
 
 const SITE_URL = 'https://www.unscramblehq.com'
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  const inventory = getSeoInventory()
+
   const staticPages = [
     '',
     '/word-finder',
@@ -16,20 +14,19 @@ export default function sitemap(): MetadataRoute.Sitemap {
     '/wordle-helper',
   ]
 
-  const lengthPages = Array.from(
-    { length: 14 },
-    (_, index) => `/${index + 2}-letter-words`
+  const lengthPages = inventory.lengths.map(
+    (length) => `/${length}-letter-words`
   )
 
-  const startsWithPages = STARTING_PREFIXES.map(
+  const startsWithPages = inventory.prefixes.map(
     (prefix) => `/words-starting-with-${prefix}`
   )
 
-  const endingPages = ENDING_SUFFIXES.map(
+  const endingPages = inventory.suffixes.map(
     (suffix) => `/words-ending-in-${suffix}`
   )
 
-  const containsPages = CONTAINS_COMBINATIONS.map(
+  const containsPages = inventory.contains.map(
     (letters) => `/words-containing-${letters}`
   )
 

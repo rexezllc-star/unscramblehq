@@ -1,8 +1,4 @@
-import {
-  CONTAINS_COMBINATIONS,
-  ENDING_SUFFIXES,
-  STARTING_PREFIXES,
-} from '@/lib/seoRouteLists'
+import { getSeoInventory } from '@/lib/seoInventory'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { SeoWordPage } from '@/components/seo/SeoWordPage'
@@ -56,19 +52,21 @@ function resolveRoute(slug: string) {
   return null
 }
 export async function generateStaticParams() {
-  const lengths = Array.from({ length: 14 }, (_, index) => ({
-    slug: `${index + 2}-letter-words`,
+  const inventory = getSeoInventory()
+
+  const lengths = inventory.lengths.map((length) => ({
+    slug: `${length}-letter-words`,
   }))
 
-  const startingLetters = STARTING_PREFIXES.map((prefix) => ({
+  const startingLetters = inventory.prefixes.map((prefix) => ({
     slug: `words-starting-with-${prefix}`,
   }))
 
-  const commonEndings = ENDING_SUFFIXES.map((ending) => ({
+  const commonEndings = inventory.suffixes.map((ending) => ({
     slug: `words-ending-in-${ending}`,
   }))
 
-  const commonContains = CONTAINS_COMBINATIONS.map((letters) => ({
+  const commonContains = inventory.contains.map((letters) => ({
     slug: `words-containing-${letters}`,
   }))
 
@@ -78,8 +76,7 @@ export async function generateStaticParams() {
     ...commonEndings,
     ...commonContains,
   ]
-}
-export async function generateMetadata({
+}export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
   const { slug } = await params
