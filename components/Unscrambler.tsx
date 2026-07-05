@@ -10,6 +10,7 @@ import { DICTIONARY } from '@/lib/dictionary'
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
   const [submitted, setSubmitted] = useState('')
+  const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({ sortBy: 'longest' })
 
   const suggestions = useMemo(() => {
@@ -17,12 +18,10 @@ export function Unscrambler() {
 
     if (cleaned.length < 2 || cleaned.includes('?')) return []
 
-    const prefixSuggestions = DICTIONARY
+    return DICTIONARY
       .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
       .slice(0, 6)
       .map((entry) => entry.word)
-
-    return Array.from(new Set(prefixSuggestions)).slice(0, 6)
   }, [letters])
 
   const results = useMemo(() => searchWords(submitted, filters), [submitted, filters])
@@ -40,7 +39,33 @@ export function Unscrambler() {
   function clearSearch() {
     setLetters('')
     setSubmitted('')
+    setShowFilters(false)
   }
+
+  const filtersPanel = (
+    <div className="grid gap-4 md:grid-cols-4 lg:grid-cols-8">
+      <FilterInput label="Min" type="number" onChange={(v) => updateFilter('minLength', Number(v))} />
+      <FilterInput label="Max" type="number" onChange={(v) => updateFilter('maxLength', Number(v))} />
+      <FilterInput label="Exact" type="number" onChange={(v) => updateFilter('exactLength', Number(v))} />
+      <FilterInput label="Starts" onChange={(v) => updateFilter('startsWith', v)} />
+      <FilterInput label="Ends" onChange={(v) => updateFilter('endsWith', v)} />
+      <FilterInput label="Contains" onChange={(v) => updateFilter('contains', v)} />
+      <FilterInput label="Exclude" onChange={(v) => updateFilter('excludes', v)} />
+
+      <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-gray-500">
+        Sort
+        <select
+          className="focus-ring h-11 rounded-xl border border-line px-3 text-sm normal-case text-ink"
+          value={filters.sortBy}
+          onChange={(e) => updateFilter('sortBy', e.target.value as SearchFilters['sortBy'])}
+        >
+          <option value="longest">Longest</option>
+          <option value="score">Highest Score</option>
+          <option value="alphabetical">Alphabetical</option>
+        </select>
+      </label>
+    </div>
+  )
 
   return (
     <section id="tool" className="container-page -mt-6">
@@ -66,27 +91,16 @@ export function Unscrambler() {
           Tip: use <span className="font-bold">?</span> as a blank tile.
         </p>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-4 lg:grid-cols-8">
-          <FilterInput label="Min" type="number" onChange={(v) => updateFilter('minLength', Number(v))} />
-          <FilterInput label="Max" type="number" onChange={(v) => updateFilter('maxLength', Number(v))} />
-          <FilterInput label="Exact" type="number" onChange={(v) => updateFilter('exactLength', Number(v))} />
-          <FilterInput label="Starts" onChange={(v) => updateFilter('startsWith', v)} />
-          <FilterInput label="Ends" onChange={(v) => updateFilter('endsWith', v)} />
-          <FilterInput label="Contains" onChange={(v) => updateFilter('contains', v)} />
-          <FilterInput label="Exclude" onChange={(v) => updateFilter('excludes', v)} />
+        <button
+          type="button"
+          onClick={() => setShowFilters((current) => !current)}
+          className="mt-5 h-12 w-full rounded-2xl border border-line px-5 text-sm font-bold text-gray-700 hover:border-brand hover:text-brand md:hidden"
+        >
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </button>
 
-          <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-gray-500">
-            Sort
-            <select
-              className="focus-ring h-11 rounded-xl border border-line px-3 text-sm normal-case text-ink"
-              value={filters.sortBy}
-              onChange={(e) => updateFilter('sortBy', e.target.value as SearchFilters['sortBy'])}
-            >
-              <option value="longest">Longest</option>
-              <option value="score">Highest Score</option>
-              <option value="alphabetical">Alphabetical</option>
-            </select>
-          </label>
+        <div className={`${showFilters ? 'block' : 'hidden'} mt-5 md:block`}>
+          {filtersPanel}
         </div>
       </div>
 
@@ -99,7 +113,9 @@ export function Unscrambler() {
           ) : (
             <div className="grid gap-8">
               <div>
-                <h2 className="text-2xl font-extrabold">{results.length} words found</h2>
+                <h2 className="text-2xl font-extrabold">
+                  {results.length} words found
+                </h2>
                 <p className="text-gray-600">
                   Results for <span className="font-bold">{submitted}</span>
                 </p>
@@ -109,7 +125,10 @@ export function Unscrambler() {
 
               {lengths.map((length) => (
                 <section key={length}>
-                  <h3 className="mb-4 text-xl font-extrabold">{length} Letter Words</h3>
+                  <h3 className="mb-4 text-xl font-extrabold">
+                    {length} Letter Words
+                  </h3>
+
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                     {grouped[length].map((result) => (
                       <WordCard key={result.word} result={result} />
@@ -131,7 +150,15 @@ export function Unscrambler() {
   )
 }
 
-function FilterInput({ label, onChange, type = 'text' }: { label: string; type?: string; onChange: (value: string) => void }) {
+function FilterInput({
+  label,
+  onChange,
+  type = 'text',
+}: {
+  label: string
+  type?: string
+  onChange: (value: string) => void
+}) {
   return (
     <label className="grid gap-1 text-xs font-bold uppercase tracking-wide text-gray-500">
       {label}
