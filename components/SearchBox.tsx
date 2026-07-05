@@ -9,11 +9,7 @@ type SearchBoxProps = {
   suggestions?: string[]
 }
 
-export function SearchBox({
-  value,
-  onChange,
-  onSubmit,
-}: SearchBoxProps) {
+export function SearchBox({ value, onChange, onSubmit }: SearchBoxProps) {
   function handleSubmit() {
     const cleanValue = value.trim()
     if (!cleanValue) return
