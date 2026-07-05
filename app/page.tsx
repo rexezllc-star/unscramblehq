@@ -1,26 +1,10 @@
-import dynamic from 'next/dynamic'
 import { Footer } from '@/components/Footer'
 import { HomeFeatures } from '@/components/HomeFeatures'
 import { HomeHero } from '@/components/HomeHero'
 import { HomeSeoContent } from '@/components/HomeSeoContent'
 import { HomeSidebar } from '@/components/HomeSidebar'
+import { HomeToolPreview } from '@/components/HomeToolPreview'
 import { Navbar } from '@/components/Navbar'
-
-const Unscrambler = dynamic(
-  () => import('@/components/Unscrambler').then((mod) => mod.Unscrambler),
-  {
-    loading: () => (
-      <section id="tool" className="container-page -mt-6">
-        <div className="card p-5 md:p-8">
-          <div className="h-16 animate-pulse rounded-2xl bg-soft" />
-          <p className="mt-3 text-sm text-gray-500">
-            Loading word finder...
-          </p>
-        </div>
-      </section>
-    ),
-  }
-)
 
 const faq = [
   ['How does a word unscrambler work?', 'A word unscrambler compares the letters you enter against a dictionary and returns valid words that can be made from those letters.'],
@@ -55,9 +39,7 @@ export default function Home() {
       <main>
         <HomeHero />
 
-        <section id="unscrambler">
-          <Unscrambler />
-        </section>
+        <HomeToolPreview />
 
         <HomeFeatures />
 
