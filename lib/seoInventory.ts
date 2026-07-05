@@ -1,7 +1,7 @@
 import { DICTIONARY } from '@/lib/dictionary'
 
 const MIN_MATCHING_WORDS = 3
-const MAX_SEO_ROUTES = 16000
+const MAX_SEO_ROUTES = 8000
 
 export type SeoInventory = {
   lengths: number[]

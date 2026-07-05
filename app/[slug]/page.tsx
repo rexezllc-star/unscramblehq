@@ -9,7 +9,8 @@ import {
   parseLengthSlug,
   parseStartsWithSlug,
 } from '@/lib/routeFactory'
-
+export const dynamicParams = true
+export const revalidate = 86400
 type PageProps = {
   params: Promise<{
     slug: string
