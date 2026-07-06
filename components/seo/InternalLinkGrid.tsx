@@ -22,36 +22,39 @@ export function InternalLinkGrid({
   const cleanWord = clean(word)
   const first = cleanWord.slice(0, 1)
   const firstTwo = cleanWord.slice(0, 2)
+  const firstThree = cleanWord.slice(0, 3)
   const last = cleanWord.slice(-1)
   const lastTwo = cleanWord.slice(-2)
+  const lastThree = cleanWord.slice(-3)
   const middle = cleanWord.length >= 4 ? cleanWord.slice(1, 4) : cleanWord
 
   const links = [
-    length
-      ? { label: `${length} Letter Words`, href: `/${length}-letter-words` }
-      : null,
+    length ? { label: `${length} Letter Words`, href: `/${length}-letter-words` } : null,
     first ? { label: `Words Starting With ${first.toUpperCase()}`, href: `/words-starting-with-${first}` } : null,
     firstTwo ? { label: `Words Starting With ${firstTwo.toUpperCase()}`, href: `/words-starting-with-${firstTwo}` } : null,
+    firstThree ? { label: `Words Starting With ${firstThree.toUpperCase()}`, href: `/words-starting-with-${firstThree}` } : null,
     last ? { label: `Words Ending In ${last.toUpperCase()}`, href: `/words-ending-in-${last}` } : null,
     lastTwo ? { label: `Words Ending In ${lastTwo.toUpperCase()}`, href: `/words-ending-in-${lastTwo}` } : null,
+    lastThree ? { label: `Words Ending In ${lastThree.toUpperCase()}`, href: `/words-ending-in-${lastThree}` } : null,
     middle ? { label: `Words Containing ${middle.toUpperCase()}`, href: `/words-containing-${middle}` } : null,
     prefix ? { label: `More ${prefix.toUpperCase()} Words`, href: `/words-starting-with-${clean(prefix)}` } : null,
     suffix ? { label: `More Words Ending ${suffix.toUpperCase()}`, href: `/words-ending-in-${clean(suffix)}` } : null,
     contains ? { label: `More Words Containing ${contains.toUpperCase()}`, href: `/words-containing-${clean(contains)}` } : null,
+    { label: '2 Letter Words', href: '/2-letter-words' },
+    { label: '3 Letter Words', href: '/3-letter-words' },
+    { label: '4 Letter Words', href: '/4-letter-words' },
+    { label: '5 Letter Words', href: '/5-letter-words' },
     { label: 'Word Finder', href: '/word-finder' },
     { label: 'Anagram Solver', href: '/anagram-solver' },
     { label: 'Scrabble Word Finder', href: '/scrabble-word-finder' },
     { label: 'Wordle Helper', href: '/wordle-helper' },
   ].filter(Boolean) as { label: string; href: string }[]
 
-  const uniqueLinks = Array.from(
-    new Map(links.map((link) => [link.href, link])).values()
-  )
+  const uniqueLinks = Array.from(new Map(links.map((link) => [link.href, link])).values())
 
   return (
     <section className="mt-10 rounded-3xl border border-line bg-white p-6">
       <h2 className="text-2xl font-black text-ink">Related Word Tools</h2>
-
       <p className="mt-2 text-sm leading-6 text-gray-600">
         Explore related word lists, patterns, and tools connected to this page.
       </p>
