@@ -1,4 +1,3 @@
-<RelatedWords words={related} />
 import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
