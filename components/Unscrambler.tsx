@@ -10,6 +10,7 @@ export function Unscrambler() {
   const [letters, setLetters] = useState('')
   const [submitted, setSubmitted] = useState('')
   const [showFilters, setShowFilters] = useState(false)
+  const [isSearching, setIsSearching] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({ sortBy: 'longest' })
 
   useEffect(() => {
@@ -18,7 +19,12 @@ export function Unscrambler() {
 
     if (initialLetters) {
       setLetters(initialLetters)
-      setSubmitted(initialLetters)
+      setIsSearching(true)
+
+      window.setTimeout(() => {
+        setSubmitted(initialLetters)
+        setIsSearching(false)
+      }, 50)
     }
   }, [])
 
@@ -42,17 +48,27 @@ export function Unscrambler() {
     if (!clean) return
 
     setLetters(clean)
-    setSubmitted(clean)
+    setIsSearching(true)
 
     const params = new URLSearchParams(window.location.search)
     params.set('letters', clean)
-    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}?${params.toString()}`
+    )
+
+    window.setTimeout(() => {
+      setSubmitted(clean)
+      setIsSearching(false)
+    }, 50)
   }
 
   function clearSearch() {
     setLetters('')
     setSubmitted('')
     setShowFilters(false)
+    setIsSearching(false)
 
     window.history.replaceState(null, '', window.location.pathname)
   }
@@ -120,7 +136,9 @@ export function Unscrambler() {
 
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_300px]">
         <main>
-          {!submitted ? (
+          {isSearching ? (
+            <LoadingState />
+          ) : !submitted ? (
             <EmptyState />
           ) : results.length === 0 ? (
             <NoResults />
@@ -191,6 +209,17 @@ function InfoBox({ title, body }: { title: string; body: string }) {
     <div className="rounded-3xl border border-line bg-soft p-5">
       <h3 className="font-extrabold">{title}</h3>
       <p className="mt-2 text-sm leading-6 text-gray-600">{body}</p>
+    </div>
+  )
+}
+
+function LoadingState() {
+  return (
+    <div className="rounded-3xl border border-line bg-soft p-10 text-center">
+      <h2 className="text-2xl font-extrabold">Finding words...</h2>
+      <p className="mt-2 text-gray-600">
+        Searching the dictionary and sorting your best results.
+      </p>
     </div>
   )
 }
