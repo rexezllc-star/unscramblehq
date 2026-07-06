@@ -1,8 +1,8 @@
-import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/Footer'
 import { Navbar } from '@/components/Navbar'
+import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
 import { RelatedWords } from '@/components/word/RelatedWords'
 import { WordHero } from '@/components/word/WordHero'
 import { getRelatedWords, getWordEntry } from '@/lib/word'
@@ -77,12 +77,7 @@ export default async function WordPage({ params }: PageProps) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      {
-        '@type': 'ListItem',
-        position: 1,
-        name: 'Home',
-        item: siteUrl,
-      },
+      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
       {
         '@type': 'ListItem',
         position: 2,
@@ -108,9 +103,7 @@ export default async function WordPage({ params }: PageProps) {
       <main className="bg-soft/40 py-12">
         <div className="container-page">
           <div className="mb-6 text-sm font-bold text-gray-500">
-            <Link href="/" className="hover:text-brand">
-              Home
-            </Link>
+            <Link href="/" className="hover:text-brand">Home</Link>
             <span className="mx-2">/</span>
             <span className="uppercase text-ink">{entry.word}</span>
           </div>
@@ -126,17 +119,10 @@ export default async function WordPage({ params }: PageProps) {
 
           <section className="mt-10 grid gap-6 lg:grid-cols-3">
             <div className="rounded-3xl border border-line bg-white p-6 lg:col-span-2">
-              <h2 className="text-2xl font-black text-ink">
-                Word Intelligence
-              </h2>
+              <h2 className="text-2xl font-black text-ink">Word Intelligence</h2>
 
               <p className="mt-3 text-sm leading-6 text-gray-600">
-                Explore the word{' '}
-                <span className="font-bold uppercase text-ink">
-                  {entry.word}
-                </span>{' '}
-                with its definition, score, letter pattern, and useful word game
-                details.
+                Explore the word <span className="font-bold uppercase text-ink">{entry.word}</span> with its definition, score, letter pattern, and useful word game details.
               </p>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
@@ -146,14 +132,8 @@ export default async function WordPage({ params }: PageProps) {
                 <Info label="Ends With" value={stats.lastLetter.toUpperCase()} />
                 <Info label="Vowels" value={stats.vowels} />
                 <Info label="Consonants" value={stats.consonants} />
-                <Info
-                  label="Letters"
-                  value={entry.word.split('').join(', ').toUpperCase()}
-                />
-                <Info
-                  label="Use Case"
-                  value="Useful for Scrabble, Wordle, crosswords, anagrams, and other word games."
-                />
+                <Info label="Letters" value={entry.word.split('').join(', ').toUpperCase()} />
+                <Info label="Use Case" value="Useful for Scrabble, Wordle, crosswords, anagrams, and other word games." />
               </div>
             </div>
 
@@ -162,30 +142,16 @@ export default async function WordPage({ params }: PageProps) {
 
               <div className="mt-4 grid gap-3 text-sm font-bold">
                 <RelatedSearch href="/" label={`Unscramble ${entry.word}`} />
-                <RelatedSearch
-                  href={`/${stats.length}-letter-words`}
-                  label={`${stats.length} Letter Words`}
-                />
-                <RelatedSearch
-                  href={`/words-starting-with-${startsWithTwo}`}
-                  label={`Words starting with ${startsWithTwo.toUpperCase()}`}
-                />
-                <RelatedSearch
-                  href={`/words-ending-in-${endsWithTwo}`}
-                  label={`Words ending with ${endsWithTwo.toUpperCase()}`}
-                />
-                <RelatedSearch
-                  href={`/words-containing-${containsMiddle}`}
-                  label={`Words containing ${containsMiddle.toUpperCase()}`}
-                />
+                <RelatedSearch href={`/${stats.length}-letter-words`} label={`${stats.length} Letter Words`} />
+                <RelatedSearch href={`/words-starting-with-${startsWithTwo}`} label={`Words starting with ${startsWithTwo.toUpperCase()}`} />
+                <RelatedSearch href={`/words-ending-in-${endsWithTwo}`} label={`Words ending with ${endsWithTwo.toUpperCase()}`} />
+                <RelatedSearch href={`/words-containing-${containsMiddle}`} label={`Words containing ${containsMiddle.toUpperCase()}`} />
               </div>
             </aside>
           </section>
 
           <section className="mt-10 rounded-3xl border border-line bg-white p-6">
-            <h2 className="text-2xl font-black text-ink">
-              Letter Breakdown
-            </h2>
+            <h2 className="text-2xl font-black text-ink">Letter Breakdown</h2>
 
             <div className="mt-5 flex flex-wrap gap-3">
               {entry.word.split('').map((letter, index) => (
@@ -199,6 +165,8 @@ export default async function WordPage({ params }: PageProps) {
             </div>
           </section>
 
+          <InternalLinkGrid word={entry.word} length={stats.length} />
+
           <RelatedWords words={related} />
         </div>
       </main>
@@ -211,9 +179,7 @@ export default async function WordPage({ params }: PageProps) {
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-3xl border border-line bg-white p-5">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">
-        {label}
-      </p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">{label}</p>
       <p className="mt-2 text-3xl font-black text-ink">{value}</p>
     </div>
   )
@@ -222,9 +188,7 @@ function StatCard({ label, value }: { label: string; value: string | number }) {
 function Info({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-2xl bg-soft p-5">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">
-        {label}
-      </p>
+      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">{label}</p>
       <p className="mt-2 text-sm leading-6 text-gray-700">{value}</p>
     </div>
   )
@@ -237,7 +201,3 @@ function RelatedSearch({ href, label }: { href: string; label: string }) {
     </Link>
   )
 }
-<InternalLinkGrid
-  word={entry.word}
-  length={stats.length}
-/>
