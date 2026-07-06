@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
 import { getWordStats } from '@/lib/wordStats'
 
 type SeoWordPageProps = {
@@ -24,6 +25,7 @@ export function SeoWordPage({
   const totalWords = uniqueWords.length
 
   const sampleStats = visibleWords.slice(0, 12).map((word) => getWordStats(word))
+
   const averageLength =
     visibleWords.length > 0
       ? Math.round(
@@ -31,6 +33,9 @@ export function SeoWordPage({
             visibleWords.length
         )
       : 0
+
+  const firstVisibleWord = visibleWords[0]
+  const firstStats = firstVisibleWord ? getWordStats(firstVisibleWord) : null
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-10">
@@ -49,28 +54,9 @@ export function SeoWordPage({
       </section>
 
       <section className="mb-8 grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Matching words</p>
-          <p className="mt-2 text-3xl font-bold text-slate-950">
-            {totalWords.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">Displayed now</p>
-          <p className="mt-2 text-3xl font-bold text-slate-950">
-            {visibleWords.length.toLocaleString()}
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-slate-500">
-            Average visible length
-          </p>
-          <p className="mt-2 text-3xl font-bold text-slate-950">
-            {averageLength || '-'}
-          </p>
-        </div>
+        <StatBox label="Matching words" value={totalWords.toLocaleString()} />
+        <StatBox label="Displayed now" value={visibleWords.length.toLocaleString()} />
+        <StatBox label="Average visible length" value={averageLength || '-'} />
       </section>
 
       <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -183,7 +169,19 @@ export function SeoWordPage({
         </section>
       )}
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <InternalLinkGrid
+        word={firstVisibleWord}
+        length={firstStats?.length}
+        prefix={firstVisibleWord?.slice(0, 2)}
+        suffix={firstVisibleWord?.slice(-2)}
+        contains={
+          firstVisibleWord && firstVisibleWord.length >= 4
+            ? firstVisibleWord.slice(1, 4)
+            : firstVisibleWord
+        }
+      />
+
+      <section className="mt-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <h2 className="text-xl font-semibold text-slate-950">
           How to use this word list
         </h2>
@@ -202,5 +200,20 @@ export function SeoWordPage({
         </div>
       </section>
     </main>
+  )
+}
+
+function StatBox({
+  label,
+  value,
+}: {
+  label: string
+  value: string | number
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-sm font-medium text-slate-500">{label}</p>
+      <p className="mt-2 text-3xl font-bold text-slate-950">{value}</p>
+    </div>
   )
 }
