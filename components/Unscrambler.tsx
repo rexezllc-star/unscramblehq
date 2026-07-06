@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { BestPlays } from './BestPlays'
 import { SearchBox } from './SearchBox'
 import { WordCard } from './WordCard'
 import { groupByLength, searchWords, type SearchFilters } from '@/lib/engine'
-import { DICTIONARY } from '@/lib/dictionary'
 
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
@@ -13,33 +12,49 @@ export function Unscrambler() {
   const [showFilters, setShowFilters] = useState(false)
   const [filters, setFilters] = useState<SearchFilters>({ sortBy: 'longest' })
 
-  const suggestions = useMemo(() => {
-    const cleaned = letters.toLowerCase().replace(/[^a-z?]/g, '')
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const initialLetters = params.get('letters')?.trim() || ''
 
-    if (cleaned.length < 2 || cleaned.includes('?')) return []
+    if (initialLetters) {
+      setLetters(initialLetters)
+      setSubmitted(initialLetters)
+    }
+  }, [])
 
-    return DICTIONARY
-      .filter((entry) => entry.word.toLowerCase().startsWith(cleaned))
-      .slice(0, 6)
-      .map((entry) => entry.word)
-  }, [letters])
+  const results = useMemo(
+    () => searchWords(submitted, filters),
+    [submitted, filters]
+  )
 
-  const results = useMemo(() => searchWords(submitted, filters), [submitted, filters])
   const grouped = useMemo(() => groupByLength(results), [results])
   const lengths = Object.keys(grouped).map(Number).sort((a, b) => b - a)
 
-  function updateFilter<K extends keyof SearchFilters>(key: K, value: SearchFilters[K]) {
+  function updateFilter<K extends keyof SearchFilters>(
+    key: K,
+    value: SearchFilters[K]
+  ) {
     setFilters((current) => ({ ...current, [key]: value || undefined }))
   }
 
   function submitSearch(value: string) {
-    setSubmitted(value)
+    const clean = value.trim()
+    if (!clean) return
+
+    setLetters(clean)
+    setSubmitted(clean)
+
+    const params = new URLSearchParams(window.location.search)
+    params.set('letters', clean)
+    window.history.replaceState(null, '', `${window.location.pathname}?${params.toString()}`)
   }
 
   function clearSearch() {
     setLetters('')
     setSubmitted('')
     setShowFilters(false)
+
+    window.history.replaceState(null, '', window.location.pathname)
   }
 
   const filtersPanel = (
@@ -75,7 +90,6 @@ export function Unscrambler() {
             value={letters}
             onChange={setLetters}
             onSubmit={submitSearch}
-            suggestions={suggestions}
           />
 
           <button

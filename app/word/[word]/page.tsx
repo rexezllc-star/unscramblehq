@@ -1,3 +1,5 @@
+<RelatedWords words={related} />
+import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { Footer } from '@/components/Footer'
@@ -236,3 +238,7 @@ function RelatedSearch({ href, label }: { href: string; label: string }) {
     </Link>
   )
 }
+<InternalLinkGrid
+  word={entry.word}
+  length={stats.length}
+/>
