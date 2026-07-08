@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
 import { getWordStats } from '@/lib/wordStats'
+import { Footer } from '@/components/Footer'
 
 type SeoWordPageProps = {
   title: string
