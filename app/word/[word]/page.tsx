@@ -8,6 +8,8 @@ import { WordHero } from '@/components/word/WordHero'
 import { getRelatedWords, getWordEntry } from '@/lib/word'
 import { getWordStats } from '@/lib/wordStats'
 import { WordIntelligenceLinks } from '@/components/word/WordIntelligenceLinks'
+import { SimilarScoreWords } from '@/components/word/SimilarScoreWords'
+import { WordFamilyLinks } from '@/components/word/WordFamilyLinks'
 
 type PageProps = {
   params: Promise<{ word: string }>
@@ -165,6 +167,16 @@ export default async function WordPage({ params }: PageProps) {
               ))}
             </div>
           </section>
+<WordIntelligenceLinks
+  word={entry.word}
+  length={stats.length}
+  score={stats.score}
+  vowels={stats.vowels}
+  consonants={stats.consonants}
+/>
+<WordFamilyLinks word={entry.word} />
+
+<SimilarScoreWords word={entry.word} score={stats.score} />
 <InternalLinkGrid
   word={entry.word}
   length={stats.length}
