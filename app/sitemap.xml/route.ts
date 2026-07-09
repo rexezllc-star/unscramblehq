@@ -3,22 +3,25 @@ import { getSitemapSeoInventory } from '@/lib/seoInventory'
 const SITE_URL = 'https://www.unscramblehq.com'
 const URLS_PER_SITEMAP = 5000
 
-function getSitemapCount() {
+function getTotalSeoPathCount() {
   const inventory = getSitemapSeoInventory()
 
-  const totalUrls =
-    5 +
+  const staticPages = 5
+
+  return (
+    staticPages +
     inventory.lengths.length +
     inventory.prefixes.length +
     inventory.suffixes.length +
-    inventory.contains.length
-
-  return Math.ceil(totalUrls / URLS_PER_SITEMAP)
+    inventory.contains.length +
+    inventory.scrabbleScores.length
+  )
 }
 
 export function GET() {
   const now = new Date().toISOString()
-  const sitemapCount = getSitemapCount()
+  const totalPaths = getTotalSeoPathCount()
+  const sitemapCount = Math.ceil(totalPaths / URLS_PER_SITEMAP)
 
   const sitemaps = Array.from({ length: sitemapCount }, (_, index) => {
     const id = index + 1
