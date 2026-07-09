@@ -4,7 +4,12 @@ export type SeoRelatedLink = {
 }
 
 export type RelatedLinkOptions = {
-  type: "length" | "startsWith" | "endsWith" | "contains"
+  type:
+    | 'length'
+    | 'startsWith'
+    | 'endsWith'
+    | 'contains'
+    | 'scrabbleScore'
   value: string | number
 }
 
@@ -44,6 +49,25 @@ export function buildRelatedLinks(
       break
     }
 
+    case 'scrabbleScore':
+  return [
+    {
+      label: 'Word Finder',
+      href: '/word-finder',
+    },
+    {
+      label: 'Scrabble Word Finder',
+      href: '/scrabble-word-finder',
+    },
+    {
+      label: 'Highest Scoring Words',
+      href: '/words-with-20-scrabble-points',
+    },
+    {
+      label: 'Wordle Helper',
+      href: '/wordle-helper',
+    },
+  ]
     case "startsWith": {
       const prefix = String(options.value).toLowerCase()
 
