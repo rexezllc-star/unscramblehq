@@ -7,6 +7,7 @@ import { RelatedWords } from '@/components/word/RelatedWords'
 import { WordHero } from '@/components/word/WordHero'
 import { getRelatedWords, getWordEntry } from '@/lib/word'
 import { getWordStats } from '@/lib/wordStats'
+import { WordIntelligenceLinks } from '@/components/word/WordIntelligenceLinks'
 
 type PageProps = {
   params: Promise<{ word: string }>
