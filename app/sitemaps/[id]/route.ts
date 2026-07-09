@@ -1,4 +1,4 @@
-import { getSeoInventory } from '@/lib/seoInventory'
+import { getSitemapSeoInventory } from '@/lib/seoInventory'
 
 const SITE_URL = 'https://www.unscramblehq.com'
 const URLS_PER_SITEMAP = 5000
@@ -13,7 +13,7 @@ function escapeXml(value: string) {
 }
 
 function getAllSeoPaths() {
-  const inventory = getSeoInventory()
+  const inventory = getSitemapSeoInventory()
 
   const staticPages = [
     '',
@@ -39,25 +39,45 @@ function getAllSeoPaths() {
     (letters) => `/words-containing-${letters}`
   )
 
+  const scrabbleScorePages = inventory.scrabbleScores.map(
+    (score) => `/words-with-${score}-scrabble-points`
+  )
+
+  const vowelPages = inventory.vowelCounts.map(
+    (count) => `/words-with-${count}-vowels`
+  )
+
+  const consonantPages = inventory.consonantCounts.map(
+    (count) => `/words-with-${count}-consonants`
+  )
+
+  const lengthPrefixPages = inventory.lengthPrefixes.map(
+    (item) => `/${item.length}-letter-words-starting-with-${item.letters}`
+  )
+
+  const lengthSuffixPages = inventory.lengthSuffixes.map(
+    (item) => `/${item.length}-letter-words-ending-in-${item.letters}`
+  )
+
   return [
     ...staticPages,
     ...lengthPages,
     ...startsWithPages,
     ...endingPages,
     ...containsPages,
+    ...scrabbleScorePages,
+    ...vowelPages,
+    ...consonantPages,
+    ...lengthPrefixPages,
+    ...lengthSuffixPages,
   ]
 }
 
 type RouteProps = {
-  params: Promise<{
-    id: string
-  }>
+  params: Promise<{ id: string }>
 }
 
-export async function GET(
-  _request: Request,
-  { params }: RouteProps
-) {
+export async function GET(_request: Request, { params }: RouteProps) {
   const { id } = await params
   const page = Number(id)
 
