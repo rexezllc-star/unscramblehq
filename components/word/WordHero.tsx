@@ -1,6 +1,22 @@
 'use client'
 
-export function WordHero({ word }: { word: any }) {
+type WordHeroProps = {
+  word: {
+    word: string
+    definition?: string
+    score?: number
+    scrabble?: number
+    wwfScore?: number
+    wwf?: number
+    length?: number
+    startsWith?: string
+    endsWith?: string
+    frequency?: string
+    difficulty?: string
+  }
+}
+
+export function WordHero({ word }: WordHeroProps) {
   const scrabbleScore = word.score ?? word.scrabble ?? '—'
   const wwfScore = word.wwfScore ?? word.wwf ?? '—'
 
@@ -12,7 +28,7 @@ export function WordHero({ word }: { word: any }) {
     if (navigator.share) {
       navigator.share({
         title: `${word.word.toUpperCase()} | UnscrambleHQ`,
-        text: word.definition,
+        text: word.definition || `Learn about ${word.word} on UnscrambleHQ.`,
         url: window.location.href,
       })
     } else {
@@ -24,7 +40,7 @@ export function WordHero({ word }: { word: any }) {
     <section className="overflow-hidden rounded-3xl border border-line bg-white shadow-sm">
       <div className="bg-gradient-to-r from-brand to-indigo-600 px-8 py-8 text-white">
         <div className="inline-flex rounded-full bg-white/20 px-4 py-2 text-sm font-extrabold backdrop-blur">
-          ★★★★☆ {word.frequency || 'Common'} Word
+          Word Details
         </div>
 
         <h1 className="mt-5 text-5xl font-black uppercase tracking-tight md:text-7xl">
@@ -60,7 +76,7 @@ export function WordHero({ word }: { word: any }) {
         <Stat label="WWF" value={wwfScore} />
         <Stat label="Starts" value={word.startsWith?.toUpperCase()} />
         <Stat label="Ends" value={word.endsWith?.toUpperCase()} />
-        <Stat label="Difficulty" value={word.difficulty} />
+        <Stat label="Difficulty" value={word.difficulty || 'Normal'} />
       </div>
     </section>
   )
@@ -79,9 +95,7 @@ function Stat({
         {label}
       </p>
 
-      <p className="mt-2 text-3xl font-black text-ink">
-        {value || '—'}
-      </p>
+      <p className="mt-2 text-3xl font-black text-ink">{value || '—'}</p>
     </div>
   )
 }

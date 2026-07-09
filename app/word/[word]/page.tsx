@@ -164,8 +164,14 @@ export default async function WordPage({ params }: PageProps) {
               ))}
             </div>
           </section>
-
-          <InternalLinkGrid word={entry.word} length={stats.length} />
+<InternalLinkGrid
+  word={entry.word}
+  length={stats.length}
+  prefix={startsWithTwo}
+  suffix={endsWithTwo}
+  contains={containsMiddle}
+/>
+          
 
           <RelatedWords words={related} />
         </div>
