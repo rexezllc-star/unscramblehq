@@ -15,6 +15,7 @@ import { WordStrategy } from '@/components/word/WordStrategy'
 import { LetterIntelligence } from '@/components/word/LetterIntelligence'
 import { SimilarPatternWords } from '@/components/word/SimilarPatternWords'
 import { MostRelatedWords } from '@/components/word/MostRelatedWords'
+import { WordGraphLinks } from '@/components/word/WordGraphLinks'
 
 type PageProps = {
   params: Promise<{ word: string }>
@@ -179,6 +180,7 @@ export default async function WordPage({ params }: PageProps) {
 <LetterIntelligence word={entry.word} />
 <SimilarPatternWords word={entry.word} />
 <MostRelatedWords word={entry.word} />
+<WordGraphLinks word={entry.word} />
 <RelatedWords words={related} />
 <WordStrategy word={entry.word} />
 <WordIntelligenceLinks
