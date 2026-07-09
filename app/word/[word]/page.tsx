@@ -10,6 +10,7 @@ import { getWordStats } from '@/lib/wordStats'
 import { WordIntelligenceLinks } from '@/components/word/WordIntelligenceLinks'
 import { SimilarScoreWords } from '@/components/word/SimilarScoreWords'
 import { WordFamilyLinks } from '@/components/word/WordFamilyLinks'
+import { WordFacts } from '@/components/word/WordFacts'
 
 type PageProps = {
   params: Promise<{ word: string }>
@@ -167,6 +168,7 @@ export default async function WordPage({ params }: PageProps) {
               ))}
             </div>
           </section>
+<WordFacts word={entry.word} />
 <WordIntelligenceLinks
   word={entry.word}
   length={stats.length}
