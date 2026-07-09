@@ -2,15 +2,28 @@ import { Footer } from '@/components/Footer'
 import { HomeFeatures } from '@/components/HomeFeatures'
 import { HomeHero } from '@/components/HomeHero'
 import { HomeSeoContent } from '@/components/HomeSeoContent'
+import { HomeSeoHub } from '@/components/HomeSeoHub'
 import { HomeSidebar } from '@/components/HomeSidebar'
 import { HomeToolPreview } from '@/components/HomeToolPreview'
 import { Navbar } from '@/components/Navbar'
 
 const faq = [
-  ['How does a word unscrambler work?', 'A word unscrambler compares the letters you enter against a dictionary and returns valid words that can be made from those letters.'],
-  ['Can I use UnscrambleHQ for Scrabble?', 'Yes. UnscrambleHQ shows Scrabble-style scores so you can quickly identify stronger word plays.'],
-  ['Can I use this for Wordle?', 'Yes. Use length, starts with, ends with, contains, and exclude filters to narrow possible Wordle answers.'],
-  ['What is an anagram?', 'An anagram is a word or phrase made by rearranging the letters of another word or phrase.'],
+  [
+    'How does a word unscrambler work?',
+    'A word unscrambler compares the letters you enter against a dictionary and returns valid words that can be made from those letters.',
+  ],
+  [
+    'Can I use UnscrambleHQ for Scrabble?',
+    'Yes. UnscrambleHQ shows Scrabble-style scores so you can quickly identify stronger word plays.',
+  ],
+  [
+    'Can I use this for Wordle?',
+    'Yes. Use length, starts with, ends with, contains, and exclude filters to narrow possible Wordle answers.',
+  ],
+  [
+    'What is an anagram?',
+    'An anagram is a word or phrase made by rearranging the letters of another word or phrase.',
+  ],
 ]
 
 export default function Home() {
@@ -42,6 +55,8 @@ export default function Home() {
         <HomeToolPreview />
 
         <HomeFeatures />
+
+        <HomeSeoHub />
 
         <section className="container-page mt-20 grid gap-12 lg:grid-cols-[1fr_340px]">
           <HomeSeoContent />
