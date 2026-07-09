@@ -12,7 +12,9 @@ import { SimilarScoreWords } from '@/components/word/SimilarScoreWords'
 import { WordFamilyLinks } from '@/components/word/WordFamilyLinks'
 import { WordFacts } from '@/components/word/WordFacts'
 import { WordStrategy } from '@/components/word/WordStrategy'
-
+import { LetterIntelligence } from '@/components/word/LetterIntelligence'
+<WordStrategy word={entry.word} />
+<LetterIntelligence word={entry.word} />
 type PageProps = {
   params: Promise<{ word: string }>
 }
