@@ -1,13 +1,19 @@
 import { DICTIONARY } from '@/lib/dictionary'
 
 const MIN_MATCHING_WORDS = 3
-const MAX_SEO_ROUTES = 8000
+const STATIC_SEO_ROUTES = 8000
+const SITEMAP_SEO_ROUTES = 80000
 
 export type SeoInventory = {
   lengths: number[]
   prefixes: string[]
   suffixes: string[]
   contains: string[]
+}
+
+type RouteBucket = {
+  type: 'prefixes' | 'suffixes' | 'contains'
+  value: string
 }
 
 function normalizeWord(word: string) {
@@ -26,10 +32,16 @@ function getQualifiedKeys(map: Map<string, number>) {
     .map(([key]) => key)
 }
 
-let cachedInventory: SeoInventory | null = null
+let allRoutesCache: {
+  lengths: number[]
+  routes: RouteBucket[]
+} | null = null
 
-export function getSeoInventory(): SeoInventory {
-  if (cachedInventory) return cachedInventory
+let staticInventoryCache: SeoInventory | null = null
+let sitemapInventoryCache: SeoInventory | null = null
+
+function getAllSeoRoutes() {
+  if (allRoutesCache) return allRoutesCache
 
   const lengthSet = new Set<number>()
   const prefixCounts = new Map<string, number>()
@@ -63,13 +75,23 @@ export function getSeoInventory(): SeoInventory {
   const suffixes = getQualifiedKeys(suffixCounts)
   const contains = getQualifiedKeys(containsCounts)
 
-  const cappedRoutes = [
-    ...prefixes.map((value) => ({ type: 'prefixes' as const, value })),
-    ...suffixes.map((value) => ({ type: 'suffixes' as const, value })),
-    ...contains.map((value) => ({ type: 'contains' as const, value })),
-  ].slice(0, MAX_SEO_ROUTES)
+  allRoutesCache = {
+    lengths,
+    routes: [
+      ...prefixes.map((value) => ({ type: 'prefixes' as const, value })),
+      ...suffixes.map((value) => ({ type: 'suffixes' as const, value })),
+      ...contains.map((value) => ({ type: 'contains' as const, value })),
+    ],
+  }
 
-  cachedInventory = {
+  return allRoutesCache
+}
+
+function buildInventory(limit: number): SeoInventory {
+  const { lengths, routes } = getAllSeoRoutes()
+  const cappedRoutes = routes.slice(0, limit)
+
+  return {
     lengths,
     prefixes: cappedRoutes
       .filter((route) => route.type === 'prefixes')
@@ -81,6 +103,16 @@ export function getSeoInventory(): SeoInventory {
       .filter((route) => route.type === 'contains')
       .map((route) => route.value),
   }
+}
 
-  return cachedInventory
+export function getSeoInventory(): SeoInventory {
+  if (staticInventoryCache) return staticInventoryCache
+  staticInventoryCache = buildInventory(STATIC_SEO_ROUTES)
+  return staticInventoryCache
+}
+
+export function getSitemapSeoInventory(): SeoInventory {
+  if (sitemapInventoryCache) return sitemapInventoryCache
+  sitemapInventoryCache = buildInventory(SITEMAP_SEO_ROUTES)
+  return sitemapInventoryCache
 }
