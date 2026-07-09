@@ -13,8 +13,8 @@ import { WordFamilyLinks } from '@/components/word/WordFamilyLinks'
 import { WordFacts } from '@/components/word/WordFacts'
 import { WordStrategy } from '@/components/word/WordStrategy'
 import { LetterIntelligence } from '@/components/word/LetterIntelligence'
-<WordStrategy word={entry.word} />
-<LetterIntelligence word={entry.word} />
+import { SimilarPatternWords } from '@/components/word/SimilarPatternWords'
+
 type PageProps = {
   params: Promise<{ word: string }>
 }
@@ -172,6 +172,12 @@ export default async function WordPage({ params }: PageProps) {
             </div>
           </section>
 <WordFacts word={entry.word} />
+
+<WordStrategy word={entry.word} />
+
+<LetterIntelligence word={entry.word} />
+<SimilarPatternWords word={entry.word} />
+<RelatedWords words={related} />
 <WordStrategy word={entry.word} />
 <WordIntelligenceLinks
   word={entry.word}
