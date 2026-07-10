@@ -18,6 +18,7 @@ import { MostRelatedWords } from '@/components/word/MostRelatedWords'
 import { WordGraphLinks } from '@/components/word/WordGraphLinks'
 import { WordFamilyGraph } from '@/components/word/WordFamilyGraph'
 import { CrosswordIntelligence } from '@/components/word/CrosswordIntelligence'
+import { WordUsageInsights } from '@/components/word/WordUsageInsights'
 
 type PageProps = {
   params: Promise<{ word: string }>
@@ -187,6 +188,7 @@ export default async function WordPage({ params }: PageProps) {
 <WordFamilyGraph word={entry.word} />
 <RelatedWords words={related} />
 <WordStrategy word={entry.word} />
+<WordUsageInsights word={entry.word} />
 <WordIntelligenceLinks
   word={entry.word}
   length={stats.length}
