@@ -23,3 +23,6 @@ yarn-error.log*
 .env.development.local
 .env.production.local
 *.zip
+
+*.zip
+.DS_Store
