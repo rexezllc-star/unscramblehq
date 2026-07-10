@@ -10,7 +10,7 @@ export type SeoPageDefinition = {
   canonical: string
 }
 
-const SITE_URL = 'https://www.unscramblehq.com'
+const SITE_URL = 'https://unscramblehq.com'
 
 export function createSeoPageDefinition(
   type: SeoPageType,

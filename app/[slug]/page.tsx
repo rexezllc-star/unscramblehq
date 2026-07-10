@@ -6,7 +6,10 @@ import {
   buildRoutePage,
   parseContainsSlug,
   parseEndsWithSlug,
+  parseLengthContainsSlug,
+  parseLengthEndsWithSlug,
   parseLengthSlug,
+  parseLengthStartsWithSlug,
   parseScrabbleScoreSlug,
   parseStartsWithSlug,
 } from '@/lib/routeFactory'
@@ -21,21 +24,76 @@ type PageProps = {
 }
 
 function resolveRoute(slug: string) {
+  const lengthStartsWith = parseLengthStartsWithSlug(slug)
+
+  if (lengthStartsWith) {
+    return {
+      type: 'lengthStartsWith' as const,
+      value: lengthStartsWith,
+    }
+  }
+
+  const lengthEndsWith = parseLengthEndsWithSlug(slug)
+
+  if (lengthEndsWith) {
+    return {
+      type: 'lengthEndsWith' as const,
+      value: lengthEndsWith,
+    }
+  }
+
+  const lengthContains = parseLengthContainsSlug(slug)
+
+  if (lengthContains) {
+    return {
+      type: 'lengthContains' as const,
+      value: lengthContains,
+    }
+  }
+
   const length = parseLengthSlug(slug)
-  if (length) return { type: 'length' as const, value: length }
+
+  if (length) {
+    return {
+      type: 'length' as const,
+      value: length,
+    }
+  }
 
   const startsWith = parseStartsWithSlug(slug)
-  if (startsWith) return { type: 'startsWith' as const, value: startsWith }
+
+  if (startsWith) {
+    return {
+      type: 'startsWith' as const,
+      value: startsWith,
+    }
+  }
 
   const endsWith = parseEndsWithSlug(slug)
-  if (endsWith) return { type: 'endsWith' as const, value: endsWith }
+
+  if (endsWith) {
+    return {
+      type: 'endsWith' as const,
+      value: endsWith,
+    }
+  }
 
   const contains = parseContainsSlug(slug)
-  if (contains) return { type: 'contains' as const, value: contains }
+
+  if (contains) {
+    return {
+      type: 'contains' as const,
+      value: contains,
+    }
+  }
 
   const scrabbleScore = parseScrabbleScoreSlug(slug)
+
   if (scrabbleScore) {
-    return { type: 'scrabbleScore' as const, value: scrabbleScore }
+    return {
+      type: 'scrabbleScore' as const,
+      value: scrabbleScore,
+    }
   }
 
   return null
@@ -73,9 +131,26 @@ export async function generateMetadata({
   const { slug } = await params
   const route = resolveRoute(slug)
 
-  if (!route) return {}
+  if (!route) {
+    return {
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
+  }
 
   const page = buildRoutePage(route.type, route.value)
+
+  if (!page.words.length) {
+    return {
+      title: 'Word List Not Found | UnscrambleHQ',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
+  }
 
   return {
     title: page.title,
@@ -92,13 +167,15 @@ export async function generateMetadata({
   }
 }
 
-export default async function SeoSlugPage({ params }: PageProps) {
+export default async function SeoSlugPage({
+  params,
+}: PageProps) {
   const { slug } = await params
   const route = resolveRoute(slug)
 
   if (!route) notFound()
 
-  const page = buildRoutePage(route.type, route.value)
+ const page = buildRoutePage(route)
 
   if (!page.words.length) notFound()
 
