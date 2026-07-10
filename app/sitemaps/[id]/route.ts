@@ -1,9 +1,21 @@
-import { getSitemapSeoInventory } from '@/lib/seoInventory'
+import {
+  DEFAULT_PATTERN_PAGE_SIZE,
+  MAX_PATTERN_ROUTES,
+  getPatternChunk,
+} from '@/lib/patternGenerator'
 
 const SITE_URL = 'https://unscramblehq.com'
-const URLS_PER_SITEMAP = 5000
+const PUBLISHED_PATTERN_LIMIT = 160_000
 
-function escapeXml(value: string) {
+export const revalidate = 604800
+
+type RouteContext = {
+  params: Promise<{
+    id: string
+  }>
+}
+
+function escapeXml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -12,95 +24,78 @@ function escapeXml(value: string) {
     .replace(/'/g, '&apos;')
 }
 
-function getAllSeoPaths() {
-  const inventory = getSitemapSeoInventory()
-
-  const staticPages = [
-    '',
-    '/word-finder',
-    '/anagram-solver',
-    '/scrabble-word-finder',
-    '/wordle-helper',
-  ]
-
-  const lengthPages = inventory.lengths.map(
-    (length) => `/${length}-letter-words`
-  )
-
-  const startsWithPages = inventory.prefixes.map(
-    (prefix) => `/words-starting-with-${prefix}`
-  )
-
-  const endingPages = inventory.suffixes.map(
-    (suffix) => `/words-ending-in-${suffix}`
-  )
-
-  const containsPages = inventory.contains.map(
-    (letters) => `/words-containing-${letters}`
-  )
-
-  const scrabbleScorePages = inventory.scrabbleScores.map(
-    (score) => `/words-with-${score}-scrabble-points`
-  )
-
-  return [
-    ...staticPages,
-    ...lengthPages,
-    ...startsWithPages,
-    ...endingPages,
-    ...containsPages,
-    ...scrabbleScorePages,
-  ]
+function xmlResponse(
+  body: string,
+  status = 200
+): Response {
+  return new Response(body, {
+    status,
+    headers: {
+      'Content-Type':
+        'application/xml; charset=utf-8',
+      'Cache-Control':
+        'public, s-maxage=604800, stale-while-revalidate=86400',
+    },
+  })
 }
 
-type RouteProps = {
-  params: Promise<{
-    id: string
-  }>
-}
-
-export async function GET(_request: Request, { params }: RouteProps) {
-  const { id } = await params
+export async function GET(
+  _request: Request,
+  context: RouteContext
+): Promise<Response> {
+  const { id } = await context.params
   const page = Number(id)
 
-  if (!Number.isInteger(page) || page < 1) {
-    return new Response('Not found', { status: 404 })
+  if (
+    !Number.isInteger(page) ||
+    page < 1
+  ) {
+    return xmlResponse(
+      '<?xml version="1.0" encoding="UTF-8"?><error>Invalid sitemap ID</error>',
+      404
+    )
   }
 
-  const allPaths = getAllSeoPaths()
-  const start = (page - 1) * URLS_PER_SITEMAP
-  const end = start + URLS_PER_SITEMAP
-  const paths = allPaths.slice(start, end)
-
-  if (!paths.length) {
-    return new Response('Not found', { status: 404 })
-  }
-
-  const now = new Date().toISOString()
-
-  const urls = paths
-    .map((path) => {
-      const priority = path === '' ? '1.0' : '0.7'
-
-      return `
-  <url>
-    <loc>${escapeXml(`${SITE_URL}${path}`)}</loc>
-    <lastmod>${now}</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>${priority}</priority>
-  </url>`
-    })
-    .join('')
-
-  return new Response(
-    `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${urls}
-</urlset>`,
-    {
-      headers: {
-        'Content-Type': 'application/xml',
-      },
-    }
+  const chunk = getPatternChunk(
+    page,
+    DEFAULT_PATTERN_PAGE_SIZE,
+    Math.min(
+      PUBLISHED_PATTERN_LIMIT,
+      MAX_PATTERN_ROUTES
+    )
   )
+
+  if (
+    page > chunk.totalPages ||
+    chunk.routes.length === 0
+  ) {
+    return xmlResponse(
+      '<?xml version="1.0" encoding="UTF-8"?><error>Sitemap not found</error>',
+      404
+    )
+  }
+
+  const urls = chunk.routes
+    .map((route) => {
+      const location =
+        `${SITE_URL}/pattern/${route.slug}`
+
+      return [
+        '  <url>',
+        `    <loc>${escapeXml(location)}</loc>`,
+        '    <changefreq>monthly</changefreq>',
+        '    <priority>0.7</priority>',
+        '  </url>',
+      ].join('\n')
+    })
+    .join('\n')
+
+  const xml = [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    urls,
+    '</urlset>',
+  ].join('\n')
+
+  return xmlResponse(xml)
 }
