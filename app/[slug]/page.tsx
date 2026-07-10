@@ -12,7 +12,7 @@ import {
 } from '@/lib/routeFactory'
 
 export const dynamicParams = true
-export const revalidate = 86400
+export const revalidate = false
 
 type PageProps = {
   params: Promise<{
