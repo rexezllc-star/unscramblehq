@@ -1,6 +1,13 @@
 import { getSitemapSeoInventory } from '@/lib/seoInventory'
+import {
+  getPatternSitemapCount,
+} from '@/lib/patternGenerator'
 
-const SITE_URL = 'https://www.unscramblehq.com'
+const sitemapCount = getPatternSitemapCount(
+  160000
+)
+
+const SITE_URL = 'https://unscramblehq.com'
 const URLS_PER_SITEMAP = 5000
 
 function getTotalSeoPathCount() {

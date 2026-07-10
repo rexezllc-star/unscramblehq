@@ -3,7 +3,7 @@ import { getWordStats } from '@/lib/wordStats'
 
 const MIN_MATCHING_WORDS = 3
 const STATIC_SEO_ROUTES = 8000
-const SITEMAP_SEO_ROUTES = 80000
+const SITEMAP_SEO_ROUTES = 180000
 
 export type SeoInventory = {
   lengths: number[]
@@ -16,6 +16,7 @@ export type SeoInventory = {
 type RouteBucket = {
   type: 'prefixes' | 'suffixes' | 'contains'
   value: string
+  count: number
 }
 
 function normalizeWord(word: string) {
@@ -27,11 +28,10 @@ function addCount(map: Map<string, number>, key: string) {
   map.set(key, (map.get(key) || 0) + 1)
 }
 
-function getQualifiedKeys(map: Map<string, number>) {
+function getQualifiedEntries(map: Map<string, number>) {
   return Array.from(map.entries())
     .filter(([, count]) => count >= MIN_MATCHING_WORDS)
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-    .map(([key]) => key)
 }
 
 let allRoutesCache: {
@@ -59,17 +59,21 @@ function getAllSeoRoutes() {
 
     lengthSet.add(word.length)
 
-    addCount(prefixCounts, word.slice(0, 1))
-    addCount(prefixCounts, word.slice(0, 2))
-    addCount(prefixCounts, word.slice(0, 3))
+    for (let size = 1; size <= Math.min(4, word.length); size += 1) {
+      addCount(prefixCounts, word.slice(0, size))
+      addCount(suffixCounts, word.slice(-size))
+    }
 
-    addCount(suffixCounts, word.slice(-1))
-    addCount(suffixCounts, word.slice(-2))
-    addCount(suffixCounts, word.slice(-3))
+    for (let size = 2; size <= Math.min(4, word.length); size += 1) {
+      const seenInWord = new Set<string>()
 
-    for (let size = 2; size <= 3; size += 1) {
       for (let index = 0; index <= word.length - size; index += 1) {
-        addCount(containsCounts, word.slice(index, index + size))
+        const fragment = word.slice(index, index + size)
+
+        if (seenInWord.has(fragment)) continue
+
+        seenInWord.add(fragment)
+        addCount(containsCounts, fragment)
       }
     }
 
@@ -78,23 +82,47 @@ function getAllSeoRoutes() {
   }
 
   const lengths = Array.from(lengthSet).sort((a, b) => a - b)
-  const prefixes = getQualifiedKeys(prefixCounts)
-  const suffixes = getQualifiedKeys(suffixCounts)
-  const contains = getQualifiedKeys(containsCounts)
+
+  const prefixes = getQualifiedEntries(prefixCounts).map(
+    ([value, count]) => ({
+      type: 'prefixes' as const,
+      value,
+      count,
+    })
+  )
+
+  const suffixes = getQualifiedEntries(suffixCounts).map(
+    ([value, count]) => ({
+      type: 'suffixes' as const,
+      value,
+      count,
+    })
+  )
+
+  const contains = getQualifiedEntries(containsCounts).map(
+    ([value, count]) => ({
+      type: 'contains' as const,
+      value,
+      count,
+    })
+  )
 
   const scrabbleScores = Array.from(scrabbleScoreCounts.entries())
     .filter(([, count]) => count >= MIN_MATCHING_WORDS)
     .sort((a, b) => a[0] - b[0])
     .map(([score]) => score)
 
+  const routes = [...prefixes, ...suffixes, ...contains].sort(
+    (a, b) =>
+      b.count - a.count ||
+      a.value.localeCompare(b.value) ||
+      a.type.localeCompare(b.type)
+  )
+
   allRoutesCache = {
     lengths,
+    routes,
     scrabbleScores,
-    routes: [
-      ...prefixes.map((value) => ({ type: 'prefixes' as const, value })),
-      ...suffixes.map((value) => ({ type: 'suffixes' as const, value })),
-      ...contains.map((value) => ({ type: 'contains' as const, value })),
-    ],
   }
 
   return allRoutesCache
@@ -121,12 +149,16 @@ function buildInventory(limit: number): SeoInventory {
 
 export function getSeoInventory(): SeoInventory {
   if (staticInventoryCache) return staticInventoryCache
+
   staticInventoryCache = buildInventory(STATIC_SEO_ROUTES)
+
   return staticInventoryCache
 }
 
 export function getSitemapSeoInventory(): SeoInventory {
   if (sitemapInventoryCache) return sitemapInventoryCache
+
   sitemapInventoryCache = buildInventory(SITEMAP_SEO_ROUTES)
+
   return sitemapInventoryCache
 }
