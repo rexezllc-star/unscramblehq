@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint .",
+    "analytics:build": "node scripts/build-analytics-data.mjs"
   },
   "dependencies": {
     "@next/third-parties": "latest",
@@ -20,6 +21,7 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "autoprefixer": "latest",
+    "csv-parse": "^7.0.1",
     "eslint": "latest",
     "eslint-config-next": "latest",
     "postcss": "latest",
