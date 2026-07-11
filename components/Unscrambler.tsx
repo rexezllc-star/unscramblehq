@@ -16,8 +16,8 @@ import {
   type SearchFilters,
 } from '@/lib/engine'
 
-const INITIAL_RESULT_LIMIT = 120
-const LOAD_MORE_AMOUNT = 120
+const INITIAL_RESULT_LIMIT = 36
+const LOAD_MORE_AMOUNT = 60
 
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
