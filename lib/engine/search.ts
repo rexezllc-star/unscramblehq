@@ -244,11 +244,6 @@ const sorted = sortResults(
   results,
   normalizedFilters.sortBy
 )
-  const sorted = sortResults(
-    results,
-    normalizedFilters.sortBy
-  )
-
   writeSearchCache(cacheKey, sorted)
 
   return sorted
