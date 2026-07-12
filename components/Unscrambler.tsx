@@ -4,30 +4,73 @@ import {
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from 'react'
 import { BestPlays } from './BestPlays'
 import { SearchBox } from './SearchBox'
 import { WordCard } from './WordCard'
-import {
-  groupByLength,
-  searchWords,
-  type SearchFilters,
-} from '@/lib/engine'
+import type {
+  SearchFilters,
+  SearchResult,
+} from '@/lib/engine/types'
 
 const INITIAL_RESULT_LIMIT = 36
 const LOAD_MORE_AMOUNT = 60
+
+type SearchWorkerResponse =
+  | {
+      type: 'ready'
+    }
+  | {
+      type: 'results'
+      id: number
+      results: SearchResult[]
+    }
+  | {
+      type: 'error'
+      id?: number
+      message: string
+    }
+
+function groupResultsByLength(
+  results: SearchResult[]
+): Record<number, SearchResult[]> {
+  const grouped: Record<number, SearchResult[]> = {}
+
+  for (const result of results) {
+    const existing = grouped[result.length]
+
+    if (existing) {
+      existing.push(result)
+    } else {
+      grouped[result.length] = [result]
+    }
+  }
+
+  return grouped
+}
 
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
   const [submitted, setSubmitted] = useState('')
   const [showFilters, setShowFilters] = useState(false)
-  const [visibleLimit, setVisibleLimit] = useState(INITIAL_RESULT_LIMIT)
+  const [visibleLimit, setVisibleLimit] = useState(
+    INITIAL_RESULT_LIMIT
+  )
 
   const [filters, setFilters] = useState<SearchFilters>({
     sortBy: 'longest',
   })
+
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [workerReady, setWorkerReady] = useState(false)
+  const [workerSearching, setWorkerSearching] = useState(false)
+  const [searchError, setSearchError] = useState('')
+
+  const workerRef = useRef<Worker | null>(null)
+  const latestRequestIdRef = useRef(0)
 
   const [isPending, startTransition] = useTransition()
 
@@ -35,8 +78,75 @@ export function Unscrambler() {
   const deferredFilters = useDeferredValue(filters)
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const initialLetters = params.get('letters')?.trim() || ''
+    const worker = new Worker(
+      new URL('../workers/search.worker.ts', import.meta.url),
+      {
+        type: 'module',
+      }
+    )
+
+    workerRef.current = worker
+
+    worker.onmessage = (
+      event: MessageEvent<SearchWorkerResponse>
+    ) => {
+      const message = event.data
+
+      if (message.type === 'ready') {
+        setWorkerReady(true)
+        return
+      }
+
+      if (message.type === 'results') {
+        if (message.id !== latestRequestIdRef.current) {
+          return
+        }
+
+        setResults(message.results)
+        setWorkerSearching(false)
+        setSearchError('')
+        return
+      }
+
+      if (message.type === 'error') {
+        if (
+          message.id !== undefined &&
+          message.id !== latestRequestIdRef.current
+        ) {
+          return
+        }
+
+        setWorkerSearching(false)
+        setSearchError(message.message)
+      }
+    }
+
+    worker.onerror = (event) => {
+      console.error('Search worker error:', event)
+
+      setWorkerSearching(false)
+      setSearchError(
+        'The word search engine could not be loaded.'
+      )
+    }
+
+    worker.postMessage({
+      type: 'warm',
+    })
+
+    return () => {
+      worker.terminate()
+      workerRef.current = null
+    }
+  }, [])
+
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    )
+
+    const initialLetters =
+      params.get('letters')?.trim() || ''
 
     if (!initialLetters) return
 
@@ -48,10 +158,33 @@ export function Unscrambler() {
     })
   }, [])
 
-  const results = useMemo(() => {
-    if (!deferredSubmitted) return []
+  useEffect(() => {
+    if (!deferredSubmitted) {
+      latestRequestIdRef.current += 1
+      setResults([])
+      setWorkerSearching(false)
+      setSearchError('')
+      return
+    }
 
-    return searchWords(deferredSubmitted, deferredFilters)
+    const worker = workerRef.current
+
+    if (!worker) return
+
+    const requestId =
+      latestRequestIdRef.current + 1
+
+    latestRequestIdRef.current = requestId
+
+    setWorkerSearching(true)
+    setSearchError('')
+
+    worker.postMessage({
+      type: 'search',
+      id: requestId,
+      letters: deferredSubmitted,
+      filters: deferredFilters,
+    })
   }, [deferredSubmitted, deferredFilters])
 
   const visibleResults = useMemo(
@@ -60,7 +193,7 @@ export function Unscrambler() {
   )
 
   const grouped = useMemo(
-    () => groupByLength(visibleResults),
+    () => groupResultsByLength(visibleResults),
     [visibleResults]
   )
 
@@ -74,10 +207,12 @@ export function Unscrambler() {
 
   const isSearching =
     isPending ||
+    workerSearching ||
     submitted !== deferredSubmitted ||
     filters !== deferredFilters
 
-  const hasMoreResults = visibleResults.length < results.length
+  const hasMoreResults =
+    visibleResults.length < results.length
 
   function updateFilter<K extends keyof SearchFilters>(
     key: K,
@@ -100,8 +235,12 @@ export function Unscrambler() {
 
     setLetters(clean)
     setVisibleLimit(INITIAL_RESULT_LIMIT)
+    setSearchError('')
 
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(
+      window.location.search
+    )
+
     params.set('letters', clean)
 
     window.history.replaceState(
@@ -116,8 +255,13 @@ export function Unscrambler() {
   }
 
   function clearSearch() {
+    latestRequestIdRef.current += 1
+
     setLetters('')
     setSubmitted('')
+    setResults([])
+    setWorkerSearching(false)
+    setSearchError('')
     setShowFilters(false)
     setVisibleLimit(INITIAL_RESULT_LIMIT)
 
@@ -130,7 +274,10 @@ export function Unscrambler() {
 
   function loadMoreResults() {
     setVisibleLimit((current) =>
-      Math.min(current + LOAD_MORE_AMOUNT, results.length)
+      Math.min(
+        current + LOAD_MORE_AMOUNT,
+        results.length
+      )
     )
   }
 
@@ -206,13 +353,18 @@ export function Unscrambler() {
           onChange={(event) =>
             updateFilter(
               'sortBy',
-              event.target.value as SearchFilters['sortBy']
+              event.target
+                .value as SearchFilters['sortBy']
             )
           }
         >
           <option value="longest">Longest</option>
-          <option value="score">Highest Score</option>
-          <option value="alphabetical">Alphabetical</option>
+          <option value="score">
+            Highest Score
+          </option>
+          <option value="alphabetical">
+            Alphabetical
+          </option>
         </select>
       </label>
     </div>
@@ -250,7 +402,9 @@ export function Unscrambler() {
           }
           className="mt-5 h-12 w-full rounded-2xl border border-line px-5 text-sm font-bold text-gray-700 transition hover:border-brand hover:text-brand md:hidden"
         >
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
+          {showFilters
+            ? 'Hide Filters'
+            : 'Show Filters'}
         </button>
 
         <div
@@ -265,7 +419,11 @@ export function Unscrambler() {
       <div className="mt-10 grid gap-8 lg:grid-cols-[1fr_300px]">
         <main>
           {isSearching ? (
-            <LoadingState />
+            <LoadingState
+              workerReady={workerReady}
+            />
+          ) : searchError ? (
+            <SearchError message={searchError} />
           ) : !deferredSubmitted ? (
             <EmptyState />
           ) : results.length === 0 ? (
@@ -274,7 +432,8 @@ export function Unscrambler() {
             <div className="grid gap-8">
               <div>
                 <h2 className="text-2xl font-extrabold">
-                  {results.length.toLocaleString()} words found
+                  {results.length.toLocaleString()}{' '}
+                  words found
                 </h2>
 
                 <p className="text-gray-600">
@@ -286,8 +445,10 @@ export function Unscrambler() {
 
                 <p className="mt-1 text-sm text-gray-500">
                   Showing{' '}
-                  {visibleResults.length.toLocaleString()} of{' '}
-                  {results.length.toLocaleString()} results
+                  {visibleResults.length.toLocaleString()}{' '}
+                  of{' '}
+                  {results.length.toLocaleString()}{' '}
+                  results
                 </p>
               </div>
 
@@ -300,17 +461,19 @@ export function Unscrambler() {
                   </h3>
 
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {grouped[length].map((result) => (
-                      <WordCard
-                        key={result.word}
-                        result={result}
-                      />
-                    ))}
+                    {grouped[length].map(
+                      (result) => (
+                        <WordCard
+                          key={result.word}
+                          result={result}
+                        />
+                      )
+                    )}
                   </div>
                 </section>
               ))}
 
-              {hasMoreResults && (
+              {hasMoreResults ? (
                 <div className="flex justify-center pt-2">
                   <button
                     type="button"
@@ -320,7 +483,7 @@ export function Unscrambler() {
                     Load More Words
                   </button>
                 </div>
-              )}
+              ) : null}
             </div>
           )}
         </main>
@@ -389,7 +552,11 @@ function InfoBox({
   )
 }
 
-function LoadingState() {
+function LoadingState({
+  workerReady,
+}: {
+  workerReady: boolean
+}) {
   return (
     <div
       className="rounded-3xl border border-line bg-soft p-10 text-center"
@@ -403,7 +570,27 @@ function LoadingState() {
       </h2>
 
       <p className="mt-2 text-gray-600">
-        Searching the dictionary and sorting your best results.
+        {workerReady
+          ? 'Searching and sorting your best results.'
+          : 'Preparing the word engine for its first search.'}
+      </p>
+    </div>
+  )
+}
+
+function SearchError({
+  message,
+}: {
+  message: string
+}) {
+  return (
+    <div className="rounded-3xl border border-red-200 bg-red-50 p-10 text-center">
+      <h2 className="text-2xl font-extrabold text-red-900">
+        Search unavailable
+      </h2>
+
+      <p className="mt-2 text-red-700">
+        {message}
       </p>
     </div>
   )
@@ -417,8 +604,8 @@ function EmptyState() {
       </h2>
 
       <p className="mt-2 text-gray-600">
-        Your words will be grouped by length with score,
-        definition, and copy actions.
+        Your words will be grouped by length with
+        score, definition, and copy actions.
       </p>
     </div>
   )
@@ -432,8 +619,8 @@ function NoResults() {
       </h2>
 
       <p className="mt-2 text-gray-600">
-        Try fewer filters, add a blank tile, or use more
-        letters.
+        Try fewer filters, add a blank tile, or use
+        more letters.
       </p>
     </div>
   )

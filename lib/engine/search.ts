@@ -10,28 +10,27 @@ import type {
   SearchResult,
   WordEntry,
 } from './types'
-import {
-  canBuildWord,
-  normalizeLetters,
-} from './utils'
+import { normalizeLetters } from './utils'
 
-const SEARCH_CACHE_LIMIT = 100
+const SEARCH_CACHE_LIMIT = 200
+const ALPHABET_SIZE = 26
+const A_CODE = 97
 
 type PreparedWord = WordEntry & {
   length: number
+  score: number
+  wwfScore: number
+  letterCounts: Uint8Array
 }
-let preparedByLengthCache:
-  | Map<number, PreparedWord[]>
-  | null = null
+
+let preparedByLengthCache: Map<number, PreparedWord[]> | null = null
 
 const searchCache = new Map<string, SearchResult[]>()
 
 function normalizeFilterText(
   value: string | undefined
 ): string | undefined {
-  const cleaned = value
-    ?.trim()
-    .toLowerCase()
+  const cleaned = value?.trim().toLowerCase()
 
   return cleaned || undefined
 }
@@ -41,24 +40,76 @@ function normalizeFilters(
 ): SearchFilters {
   return {
     ...filters,
-    startsWith: normalizeFilterText(
-      filters.startsWith
-    ),
-    endsWith: normalizeFilterText(
-      filters.endsWith
-    ),
-    contains: normalizeFilterText(
-      filters.contains
-    ),
-    excludes: normalizeFilterText(
-      filters.excludes
-    ),
+    startsWith: normalizeFilterText(filters.startsWith),
+    endsWith: normalizeFilterText(filters.endsWith),
+    contains: normalizeFilterText(filters.contains),
+    excludes: normalizeFilterText(filters.excludes),
     sortBy: filters.sortBy || 'longest',
   }
 }
 
-function getPreparedDictionaryByLength():
-  Map<number, PreparedWord[]> {
+function createLetterCounts(word: string): Uint8Array {
+  const counts = new Uint8Array(ALPHABET_SIZE)
+
+  for (let index = 0; index < word.length; index += 1) {
+    const code = word.charCodeAt(index) - A_CODE
+
+    if (code >= 0 && code < ALPHABET_SIZE) {
+      counts[code] += 1
+    }
+  }
+
+  return counts
+}
+
+function createRackProfile(letters: string) {
+  const counts = new Uint8Array(ALPHABET_SIZE)
+  let blanks = 0
+
+  for (let index = 0; index < letters.length; index += 1) {
+    const character = letters[index]
+
+    if (character === '?') {
+      blanks += 1
+      continue
+    }
+
+    const code = character.charCodeAt(0) - A_CODE
+
+    if (code >= 0 && code < ALPHABET_SIZE) {
+      counts[code] += 1
+    }
+  }
+
+  return {
+    counts,
+    blanks,
+  }
+}
+
+function canBuildPreparedWord(
+  candidateCounts: Uint8Array,
+  rackCounts: Uint8Array,
+  blanks: number
+): boolean {
+  let missingLetters = 0
+
+  for (let index = 0; index < ALPHABET_SIZE; index += 1) {
+    const missing = candidateCounts[index] - rackCounts[index]
+
+    if (missing > 0) {
+      missingLetters += missing
+
+      if (missingLetters > blanks) {
+        return false
+      }
+    }
+  }
+
+  return true
+}
+
+function getPreparedDictionaryByLength(): Map<number, PreparedWord[]> {
   if (preparedByLengthCache) {
     return preparedByLengthCache
   }
@@ -66,21 +117,29 @@ function getPreparedDictionaryByLength():
   const index = new Map<number, PreparedWord[]>()
 
   for (const entry of getDictionary()) {
+    const word = entry.word
+    const length = word.length
+
     const prepared: PreparedWord = {
-  ...entry,
-  length: entry.word.length,
-}
+      ...entry,
+      length,
+      score: scrabbleScore(word),
+      wwfScore: wordsWithFriendsScore(word),
+      letterCounts: createLetterCounts(word),
+    }
 
-    const words =
-      index.get(prepared.length) ?? []
+    const bucket = index.get(length)
 
-    words.push(prepared)
-    index.set(prepared.length, words)
+    if (bucket) {
+      bucket.push(prepared)
+    } else {
+      index.set(length, [prepared])
+    }
   }
 
   preparedByLengthCache = index
 
-  return preparedByLengthCache
+  return index
 }
 
 function buildCacheKey(
@@ -101,14 +160,11 @@ function buildCacheKey(
   ])
 }
 
-function readSearchCache(
-  key: string
-): SearchResult[] | null {
+function readSearchCache(key: string): SearchResult[] | null {
   const cached = searchCache.get(key)
 
   if (!cached) return null
 
-  // Refresh its position in the LRU cache.
   searchCache.delete(key)
   searchCache.set(key, cached)
 
@@ -121,14 +177,11 @@ function writeSearchCache(
 ): void {
   searchCache.set(key, results)
 
-  if (
-    searchCache.size <= SEARCH_CACHE_LIMIT
-  ) {
+  if (searchCache.size <= SEARCH_CACHE_LIMIT) {
     return
   }
 
-  const oldestKey =
-    searchCache.keys().next().value
+  const oldestKey = searchCache.keys().next().value
 
   if (oldestKey) {
     searchCache.delete(oldestKey)
@@ -168,6 +221,14 @@ function getCandidateLengths(
   return lengths
 }
 
+/**
+ * Builds the expensive dictionary index before the first search.
+ * Safe to call more than once.
+ */
+export function warmSearchEngine(): void {
+  getPreparedDictionaryByLength()
+}
+
 export function searchWords(
   letters: string,
   filters: SearchFilters = {}
@@ -176,8 +237,7 @@ export function searchWords(
 
   if (!cleaned) return []
 
-  const normalizedFilters =
-    normalizeFilters(filters)
+  const normalizedFilters = normalizeFilters(filters)
 
   const cacheKey = buildCacheKey(
     cleaned,
@@ -190,60 +250,58 @@ export function searchWords(
     return cached
   }
 
-  const byLength =
-    getPreparedDictionaryByLength()
+  const byLength = getPreparedDictionaryByLength()
 
-  const candidateLengths =
-    getCandidateLengths(
-      cleaned.length,
-      normalizedFilters
-    )
+  const candidateLengths = getCandidateLengths(
+    cleaned.length,
+    normalizedFilters
+  )
 
+  const rack = createRackProfile(cleaned)
   const buildable: PreparedWord[] = []
 
   for (const length of candidateLengths) {
-    const candidates =
-      byLength.get(length) ?? []
+    const candidates = byLength.get(length) ?? []
 
     for (const entry of candidates) {
       if (
-        canBuildWord(entry.word, cleaned)
+        canBuildPreparedWord(
+          entry.letterCounts,
+          rack.counts,
+          rack.blanks
+        )
       ) {
         buildable.push(entry)
       }
     }
   }
 
-  /*
-   * PreparedWord includes all WordEntry fields, so it
-   * can safely pass through the existing filter engine.
-   * Its scores and length are already calculated.
-   */
   const filtered = applyFilters(
     buildable,
     normalizedFilters
   ) as PreparedWord[]
 
-  const minimumScore =
-    normalizedFilters.minScore
+  const minimumScore = normalizedFilters.minScore
 
   const results: SearchResult[] = filtered
-  .map((entry) => ({
-    ...entry,
-    length: entry.word.length,
-    score: scrabbleScore(entry.word),
-    wwfScore: wordsWithFriendsScore(entry.word),
-  }))
-  .filter(
-    (entry) =>
-      !normalizedFilters.minScore ||
-      entry.score >= normalizedFilters.minScore
+    .filter(
+      (entry) =>
+        minimumScore === undefined ||
+        entry.score >= minimumScore
+    )
+    .map((entry) => ({
+      word: entry.word,
+      definition: entry.definition,
+      length: entry.length,
+      score: entry.score,
+      wwfScore: entry.wwfScore,
+    }))
+
+  const sorted = sortResults(
+    results,
+    normalizedFilters.sortBy
   )
 
-const sorted = sortResults(
-  results,
-  normalizedFilters.sortBy
-)
   writeSearchCache(cacheKey, sorted)
 
   return sorted
@@ -252,12 +310,10 @@ const sorted = sortResults(
 export function groupByLength(
   results: SearchResult[]
 ): Record<number, SearchResult[]> {
-  const grouped:
-    Record<number, SearchResult[]> = {}
+  const grouped: Record<number, SearchResult[]> = {}
 
   for (const result of results) {
-    const existing =
-      grouped[result.length]
+    const existing = grouped[result.length]
 
     if (existing) {
       existing.push(result)
@@ -270,5 +326,10 @@ export function groupByLength(
 }
 
 export function clearSearchCache(): void {
+  searchCache.clear()
+}
+
+export function clearPreparedSearchIndex(): void {
+  preparedByLengthCache = null
   searchCache.clear()
 }

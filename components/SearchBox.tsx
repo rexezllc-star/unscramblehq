@@ -1,6 +1,6 @@
 'use client'
 
-import { KeyboardEvent } from 'react'
+import type { KeyboardEvent } from 'react'
 
 type SearchBoxProps = {
   value: string
@@ -9,14 +9,22 @@ type SearchBoxProps = {
   suggestions?: string[]
 }
 
-export function SearchBox({ value, onChange, onSubmit }: SearchBoxProps) {
+export function SearchBox({
+  value,
+  onChange,
+  onSubmit,
+}: SearchBoxProps) {
   function handleSubmit() {
     const cleanValue = value.trim()
+
     if (!cleanValue) return
+
     onSubmit(cleanValue)
   }
 
-  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(
+    event: KeyboardEvent<HTMLInputElement>
+  ) {
     if (event.key === 'Enter') {
       event.preventDefault()
       handleSubmit()
@@ -24,10 +32,12 @@ export function SearchBox({ value, onChange, onSubmit }: SearchBoxProps) {
   }
 
   return (
-    <div className="grid w-full gap-3 md:grid-cols-[1fr_auto]">
+    <div className="grid gap-3">
       <input
         value={value}
-        onChange={(event) => onChange(event.target.value)}
+        onChange={(event) =>
+          onChange(event.target.value)
+        }
         onKeyDown={handleKeyDown}
         placeholder="Enter letters..."
         className="focus-ring h-16 w-full rounded-2xl border border-line px-5 text-xl font-semibold tracking-wide text-ink"
