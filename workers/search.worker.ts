@@ -1,9 +1,6 @@
 /// <reference lib="webworker" />
 
-import {
-  searchWords,
-  warmSearchEngine,
-} from '../lib/engine/search'
+import { searchWords } from '../lib/engine/search'
 import type {
   SearchFilters,
   SearchResult,
@@ -35,8 +32,7 @@ type WorkerResponse =
       message: string
     }
 
-const workerScope =
-  self as DedicatedWorkerGlobalScope
+const workerScope = self as DedicatedWorkerGlobalScope
 
 workerScope.onmessage = (
   event: MessageEvent<WorkerRequest>
@@ -44,9 +40,11 @@ workerScope.onmessage = (
   const message = event.data
 
   try {
+    /**
+     * Do not build the complete index here.
+     * Confirm that the worker is available immediately.
+     */
     if (message.type === 'warm') {
-      warmSearchEngine()
-
       const response: WorkerResponse = {
         type: 'ready',
       }
@@ -55,20 +53,18 @@ workerScope.onmessage = (
       return
     }
 
-    if (message.type === 'search') {
-      const results = searchWords(
-        message.letters,
-        message.filters
-      )
+    const results = searchWords(
+      message.letters,
+      message.filters
+    )
 
-      const response: WorkerResponse = {
-        type: 'results',
-        id: message.id,
-        results,
-      }
-
-      workerScope.postMessage(response)
+    const response: WorkerResponse = {
+      type: 'results',
+      id: message.id,
+      results,
     }
+
+    workerScope.postMessage(response)
   } catch (error) {
     const response: WorkerResponse = {
       type: 'error',
