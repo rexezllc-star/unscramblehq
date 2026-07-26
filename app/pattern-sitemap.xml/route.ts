@@ -1,4 +1,4 @@
-import {
+curl -I http://localhost:8000docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"import {
   DEFAULT_PATTERN_PAGE_SIZE,
   MAX_PATTERN_ROUTES,
   getPatternSitemapCount,

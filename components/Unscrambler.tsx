@@ -1,44 +1,198 @@
 'use client'
 
 import {
+  useCallback,
   useDeferredValue,
   useEffect,
   useMemo,
+  useRef,
   useState,
   useTransition,
 } from 'react'
+
 import { BestPlays } from './BestPlays'
 import { SearchBox } from './SearchBox'
 import { WordCard } from './WordCard'
-import {
-  groupByLength,
-  searchWords,
-  type SearchFilters,
-} from '@/lib/engine'
+
+import type {
+  SearchFilters,
+  SearchResult,
+} from '@/lib/engine/types'
 
 const INITIAL_RESULT_LIMIT = 36
 const LOAD_MORE_AMOUNT = 60
 
+type SearchEngineModule = {
+  searchWords: (
+    letters: string,
+    filters?: SearchFilters
+  ) => SearchResult[]
+}
+
+type IdleWindow = Window & {
+  requestIdleCallback?: (
+    callback: () => void,
+    options?: {
+      timeout?: number
+    }
+  ) => number
+
+  cancelIdleCallback?: (id: number) => void
+}
+
+function groupResultsByLength(
+  results: SearchResult[]
+): Record<number, SearchResult[]> {
+  const grouped: Record<number, SearchResult[]> = {}
+
+  for (const result of results) {
+    const length = result.length
+
+    if (!grouped[length]) {
+      grouped[length] = []
+    }
+
+    grouped[length].push(result)
+  }
+
+  return grouped
+}
+
 export function Unscrambler() {
   const [letters, setLetters] = useState('')
   const [submitted, setSubmitted] = useState('')
-  const [showFilters, setShowFilters] = useState(false)
-  const [visibleLimit, setVisibleLimit] = useState(INITIAL_RESULT_LIMIT)
 
   const [filters, setFilters] = useState<SearchFilters>({
     sortBy: 'longest',
   })
 
+  const [results, setResults] = useState<SearchResult[]>([])
+  const [visibleLimit, setVisibleLimit] = useState(
+    INITIAL_RESULT_LIMIT
+  )
+
+  const [showFilters, setShowFilters] = useState(false)
+  const [engineLoading, setEngineLoading] = useState(false)
+  const [searchError, setSearchError] = useState('')
+
   const [isPending, startTransition] = useTransition()
+
+  const engineRef = useRef<SearchEngineModule | null>(null)
+
+  const enginePromiseRef =
+    useRef<Promise<SearchEngineModule> | null>(null)
+
+  const latestSearchIdRef = useRef(0)
 
   const deferredSubmitted = useDeferredValue(submitted)
   const deferredFilters = useDeferredValue(filters)
 
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    const initialLetters = params.get('letters')?.trim() || ''
+  /**
+   * Loads the heavy dictionary/search module only when needed.
+   *
+   * The module is cached after the first load, so subsequent searches
+   * do not repeat the import or engine initialization.
+   */
+  const loadSearchEngine =
+    useCallback(async (): Promise<SearchEngineModule> => {
+      if (engineRef.current) {
+        return engineRef.current
+      }
 
-    if (!initialLetters) return
+      if (!enginePromiseRef.current) {
+        enginePromiseRef.current = import(
+          '@/lib/engine/search'
+        )
+          .then((module) => {
+            const engine: SearchEngineModule = {
+              searchWords: module.searchWords,
+            }
+
+            engineRef.current = engine
+
+            return engine
+          })
+          .catch((error: unknown) => {
+            enginePromiseRef.current = null
+            throw error
+          })
+      }
+
+      return enginePromiseRef.current
+    }, [])
+
+  /**
+   * Preload the engine during idle browser time.
+   *
+   * This keeps the dictionary out of the initial interactive bundle,
+   * but usually prepares it before the user submits a search.
+   */
+  useEffect(() => {
+    let cancelled = false
+    let idleId: number | undefined
+    let timeoutId: number | undefined
+
+    const preloadEngine = () => {
+      if (cancelled || engineRef.current) {
+        return
+      }
+
+      void loadSearchEngine().catch((error: unknown) => {
+        console.error(
+          'Search engine preload failed:',
+          error
+        )
+      })
+    }
+
+    const browserWindow = window as IdleWindow
+
+    if (browserWindow.requestIdleCallback) {
+      idleId = browserWindow.requestIdleCallback(
+        preloadEngine,
+        {
+          timeout: 4000,
+        }
+      )
+    } else {
+      timeoutId = window.setTimeout(
+        preloadEngine,
+        1500
+      )
+    }
+
+    return () => {
+      cancelled = true
+
+      if (
+        idleId !== undefined &&
+        browserWindow.cancelIdleCallback
+      ) {
+        browserWindow.cancelIdleCallback(idleId)
+      }
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId)
+      }
+    }
+  }, [loadSearchEngine])
+
+  /**
+   * Restore a search from the URL:
+   *
+   * /word-finder?letters=triangle
+   */
+  useEffect(() => {
+    const params = new URLSearchParams(
+      window.location.search
+    )
+
+    const initialLetters =
+      params.get('letters')?.trim() ?? ''
+
+    if (!initialLetters) {
+      return
+    }
 
     setLetters(initialLetters)
     setVisibleLimit(INITIAL_RESULT_LIMIT)
@@ -48,11 +202,88 @@ export function Unscrambler() {
     })
   }, [])
 
-  const results = useMemo(() => {
-    if (!deferredSubmitted) return []
+  /**
+   * Run a search whenever the submitted letters or filters change.
+   */
+  useEffect(() => {
+    if (!deferredSubmitted) {
+      latestSearchIdRef.current += 1
 
-    return searchWords(deferredSubmitted, deferredFilters)
-  }, [deferredSubmitted, deferredFilters])
+      setResults([])
+      setEngineLoading(false)
+      setSearchError('')
+
+      return
+    }
+
+    const searchId =
+      latestSearchIdRef.current + 1
+
+    latestSearchIdRef.current = searchId
+
+    let cancelled = false
+
+    async function runSearch() {
+      setEngineLoading(true)
+      setSearchError('')
+
+      try {
+        const engine = await loadSearchEngine()
+
+        if (
+          cancelled ||
+          searchId !== latestSearchIdRef.current
+        ) {
+          return
+        }
+
+        const matches = engine.searchWords(
+          deferredSubmitted,
+          deferredFilters
+        )
+
+        if (
+          cancelled ||
+          searchId !== latestSearchIdRef.current
+        ) {
+          return
+        }
+
+        setResults(matches)
+      } catch (error: unknown) {
+        console.error('Word search failed:', error)
+
+        enginePromiseRef.current = null
+
+        if (
+          !cancelled &&
+          searchId === latestSearchIdRef.current
+        ) {
+          setResults([])
+          setSearchError(
+            'The search engine could not be loaded. Please try again.'
+          )
+        }
+      } finally {
+        if (
+          !cancelled &&
+          searchId === latestSearchIdRef.current
+        ) {
+          setEngineLoading(false)
+        }
+      }
+    }
+
+    void runSearch()
+
+    return () => {
+      cancelled = true
+    }
+  }, [
+    deferredSubmitted,
+    deferredFilters,
+    loadSearchEngine,
+  ])
 
   const visibleResults = useMemo(
     () => results.slice(0, visibleLimit),
@@ -60,7 +291,7 @@ export function Unscrambler() {
   )
 
   const grouped = useMemo(
-    () => groupByLength(visibleResults),
+    () => groupResultsByLength(visibleResults),
     [visibleResults]
   )
 
@@ -74,12 +305,16 @@ export function Unscrambler() {
 
   const isSearching =
     isPending ||
+    engineLoading ||
     submitted !== deferredSubmitted ||
     filters !== deferredFilters
 
-  const hasMoreResults = visibleResults.length < results.length
+  const hasMoreResults =
+    visibleResults.length < results.length
 
-  function updateFilter<K extends keyof SearchFilters>(
+  function updateFilter<
+    K extends keyof SearchFilters,
+  >(
     key: K,
     value: SearchFilters[K]
   ) {
@@ -96,12 +331,18 @@ export function Unscrambler() {
   function submitSearch(value: string) {
     const clean = value.trim()
 
-    if (!clean) return
+    if (!clean) {
+      return
+    }
 
     setLetters(clean)
     setVisibleLimit(INITIAL_RESULT_LIMIT)
+    setSearchError('')
 
-    const params = new URLSearchParams(window.location.search)
+    const params = new URLSearchParams(
+      window.location.search
+    )
+
     params.set('letters', clean)
 
     window.history.replaceState(
@@ -116,8 +357,13 @@ export function Unscrambler() {
   }
 
   function clearSearch() {
+    latestSearchIdRef.current += 1
+
     setLetters('')
     setSubmitted('')
+    setResults([])
+    setEngineLoading(false)
+    setSearchError('')
     setShowFilters(false)
     setVisibleLimit(INITIAL_RESULT_LIMIT)
 
@@ -130,7 +376,10 @@ export function Unscrambler() {
 
   function loadMoreResults() {
     setVisibleLimit((current) =>
-      Math.min(current + LOAD_MORE_AMOUNT, results.length)
+      Math.min(
+        current + LOAD_MORE_AMOUNT,
+        results.length
+      )
     )
   }
 
@@ -172,28 +421,40 @@ export function Unscrambler() {
       <FilterInput
         label="Starts"
         onChange={(value) =>
-          updateFilter('startsWith', value)
+          updateFilter(
+            'startsWith',
+            value || undefined
+          )
         }
       />
 
       <FilterInput
         label="Ends"
         onChange={(value) =>
-          updateFilter('endsWith', value)
+          updateFilter(
+            'endsWith',
+            value || undefined
+          )
         }
       />
 
       <FilterInput
         label="Contains"
         onChange={(value) =>
-          updateFilter('contains', value)
+          updateFilter(
+            'contains',
+            value || undefined
+          )
         }
       />
 
       <FilterInput
         label="Exclude"
         onChange={(value) =>
-          updateFilter('excludes', value)
+          updateFilter(
+            'excludes',
+            value || undefined
+          )
         }
       />
 
@@ -206,20 +467,32 @@ export function Unscrambler() {
           onChange={(event) =>
             updateFilter(
               'sortBy',
-              event.target.value as SearchFilters['sortBy']
+              event.target
+                .value as SearchFilters['sortBy']
             )
           }
         >
-          <option value="longest">Longest</option>
-          <option value="score">Highest Score</option>
-          <option value="alphabetical">Alphabetical</option>
+          <option value="longest">
+            Longest
+          </option>
+
+          <option value="score">
+            Highest Score
+          </option>
+
+          <option value="alphabetical">
+            Alphabetical
+          </option>
         </select>
       </label>
     </div>
   )
 
   return (
-    <section id="tool" className="container-page -mt-6">
+    <section
+      id="tool"
+      className="container-page -mt-6"
+    >
       <div className="card overflow-visible p-5 md:p-8">
         <div className="grid gap-3">
           <SearchBox
@@ -246,11 +519,15 @@ export function Unscrambler() {
         <button
           type="button"
           onClick={() =>
-            setShowFilters((current) => !current)
+            setShowFilters(
+              (current) => !current
+            )
           }
           className="mt-5 h-12 w-full rounded-2xl border border-line px-5 text-sm font-bold text-gray-700 transition hover:border-brand hover:text-brand md:hidden"
         >
-          {showFilters ? 'Hide Filters' : 'Show Filters'}
+          {showFilters
+            ? 'Hide Filters'
+            : 'Show Filters'}
         </button>
 
         <div
@@ -266,6 +543,10 @@ export function Unscrambler() {
         <main>
           {isSearching ? (
             <LoadingState />
+          ) : searchError ? (
+            <SearchError
+              message={searchError}
+            />
           ) : !deferredSubmitted ? (
             <EmptyState />
           ) : results.length === 0 ? (
@@ -274,7 +555,8 @@ export function Unscrambler() {
             <div className="grid gap-8">
               <div>
                 <h2 className="text-2xl font-extrabold">
-                  {results.length.toLocaleString()} words found
+                  {results.length.toLocaleString()}{' '}
+                  words found
                 </h2>
 
                 <p className="text-gray-600">
@@ -286,8 +568,10 @@ export function Unscrambler() {
 
                 <p className="mt-1 text-sm text-gray-500">
                   Showing{' '}
-                  {visibleResults.length.toLocaleString()} of{' '}
-                  {results.length.toLocaleString()} results
+                  {visibleResults.length.toLocaleString()}{' '}
+                  of{' '}
+                  {results.length.toLocaleString()}{' '}
+                  results
                 </p>
               </div>
 
@@ -300,12 +584,14 @@ export function Unscrambler() {
                   </h3>
 
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                    {grouped[length].map((result) => (
-                      <WordCard
-                        key={result.word}
-                        result={result}
-                      />
-                    ))}
+                    {grouped[length].map(
+                      (result) => (
+                        <WordCard
+                          key={result.word}
+                          result={result}
+                        />
+                      )
+                    )}
                   </div>
                 </section>
               ))}
@@ -361,7 +647,11 @@ function FilterInput({
 
       <input
         type={type}
-        min={type === 'number' ? 1 : undefined}
+        min={
+          type === 'number'
+            ? 1
+            : undefined
+        }
         onChange={(event) =>
           onChange(event.target.value)
         }
@@ -380,7 +670,9 @@ function InfoBox({
 }) {
   return (
     <div className="rounded-3xl border border-line bg-soft p-5">
-      <h3 className="font-extrabold">{title}</h3>
+      <h3 className="font-extrabold">
+        {title}
+      </h3>
 
       <p className="mt-2 text-sm leading-6 text-gray-600">
         {body}
@@ -403,7 +695,29 @@ function LoadingState() {
       </h2>
 
       <p className="mt-2 text-gray-600">
-        Searching the dictionary and sorting your best results.
+        Searching the dictionary and sorting your
+        best results.
+      </p>
+    </div>
+  )
+}
+
+function SearchError({
+  message,
+}: {
+  message: string
+}) {
+  return (
+    <div
+      className="rounded-3xl border border-red-200 bg-red-50 p-10 text-center"
+      role="alert"
+    >
+      <h2 className="text-2xl font-extrabold text-red-900">
+        Search unavailable
+      </h2>
+
+      <p className="mt-2 text-red-700">
+        {message}
       </p>
     </div>
   )
@@ -417,8 +731,8 @@ function EmptyState() {
       </h2>
 
       <p className="mt-2 text-gray-600">
-        Your words will be grouped by length with score,
-        definition, and copy actions.
+        Your words will be grouped by length with
+        score, definition, and copy actions.
       </p>
     </div>
   )
@@ -432,8 +746,8 @@ function NoResults() {
       </h2>
 
       <p className="mt-2 text-gray-600">
-        Try fewer filters, add a blank tile, or use more
-        letters.
+        Try fewer filters, add a blank tile, or use
+        more letters.
       </p>
     </div>
   )
