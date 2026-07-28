@@ -3,43 +3,70 @@ import { notFound } from 'next/navigation'
 import { Footer } from '@/components/Footer'
 import { Navbar } from '@/components/Navbar'
 import { InternalLinkGrid } from '@/components/seo/InternalLinkGrid'
+import { CrosswordIntelligence } from '@/components/word/CrosswordIntelligence'
+import { LetterIntelligence } from '@/components/word/LetterIntelligence'
+import { MostRelatedWords } from '@/components/word/MostRelatedWords'
 import { RelatedWords } from '@/components/word/RelatedWords'
+import { SimilarPatternWords } from '@/components/word/SimilarPatternWords'
+import { SimilarScoreWords } from '@/components/word/SimilarScoreWords'
+import { WordFacts } from '@/components/word/WordFacts'
+import { WordFamilyGraph } from '@/components/word/WordFamilyGraph'
+import { WordFamilyLinks } from '@/components/word/WordFamilyLinks'
+import { WordGraphLinks } from '@/components/word/WordGraphLinks'
 import { WordHero } from '@/components/word/WordHero'
+import { WordIntelligenceLinks } from '@/components/word/WordIntelligenceLinks'
+import { WordStrategy } from '@/components/word/WordStrategy'
+import { WordUsageInsights } from '@/components/word/WordUsageInsights'
 import { getRelatedWords, getWordEntry } from '@/lib/word'
 import { getWordStats } from '@/lib/wordStats'
-import { WordIntelligenceLinks } from '@/components/word/WordIntelligenceLinks'
-import { SimilarScoreWords } from '@/components/word/SimilarScoreWords'
-import { WordFamilyLinks } from '@/components/word/WordFamilyLinks'
-import { WordFacts } from '@/components/word/WordFacts'
-import { WordStrategy } from '@/components/word/WordStrategy'
-import { LetterIntelligence } from '@/components/word/LetterIntelligence'
-import { SimilarPatternWords } from '@/components/word/SimilarPatternWords'
-import { MostRelatedWords } from '@/components/word/MostRelatedWords'
-import { WordGraphLinks } from '@/components/word/WordGraphLinks'
-import { WordFamilyGraph } from '@/components/word/WordFamilyGraph'
-import { CrosswordIntelligence } from '@/components/word/CrosswordIntelligence'
-import { WordUsageInsights } from '@/components/word/WordUsageInsights'
 
 type PageProps = {
-  params: Promise<{ word: string }>
+  params: Promise<{
+    word: string
+  }>
 }
 
-const siteUrl = 'https://www.unscramblehq.com'
+type SectionHeadingProps = {
+  id: string
+  eyebrow: string
+  title: string
+  description: string
+}
+
+type RelatedSearchProps = {
+  href: string
+  label: string
+}
+
+const SITE_URL = 'https://www.unscramblehq.com'
 
 export async function generateMetadata({ params }: PageProps) {
   const { word } = await params
   const entry = getWordEntry(word)
 
-  if (!entry) return { title: 'Word Not Found | UnscrambleHQ' }
+  if (!entry) {
+    return {
+      title: 'Word Not Found | UnscrambleHQ',
+      robots: {
+        index: false,
+        follow: false,
+      },
+    }
+  }
 
-  const title = `${entry.word.toUpperCase()} Meaning, Scrabble Score & Word Details | UnscrambleHQ`
-  const description = `Learn ${entry.word}'s definition, Scrabble score, word length, vowels, consonants, related words, and useful word game details.`
-  const url = `${siteUrl}/word/${entry.word}`
+  const normalizedWord = entry.word.toLowerCase()
+  const displayWord = entry.word.toUpperCase()
+  const url = `${SITE_URL}/word/${normalizedWord}`
+
+  const title = `${displayWord} Meaning, Scrabble Score & Word Details | UnscrambleHQ`
+  const description = `Learn the definition of ${entry.word}, its Scrabble score, word length, vowels, consonants, related words, and useful word-game details.`
 
   return {
     title,
     description,
-    alternates: { canonical: url },
+    alternates: {
+      canonical: url,
+    },
     openGraph: {
       title,
       description,
@@ -59,29 +86,35 @@ export default async function WordPage({ params }: PageProps) {
   const { word } = await params
   const entry = getWordEntry(word)
 
-  if (!entry) notFound()
+  if (!entry) {
+    notFound()
+  }
 
-  const stats = getWordStats(entry.word)
-  const related = getRelatedWords(entry.word)
-  const url = `${siteUrl}/word/${entry.word}`
+  const normalizedWord = entry.word.toLowerCase()
+  const displayWord = entry.word.toUpperCase()
 
-  const startsWithTwo = entry.word.slice(0, 2).toLowerCase()
-  const endsWithTwo = entry.word.slice(-2).toLowerCase()
+  const stats = getWordStats(normalizedWord)
+  const relatedWords = getRelatedWords(normalizedWord)
+  const url = `${SITE_URL}/word/${normalizedWord}`
+
+  const startsWithTwo = normalizedWord.slice(0, 2)
+  const endsWithTwo = normalizedWord.slice(-2)
   const containsMiddle =
-    entry.word.length >= 3
-      ? entry.word.slice(1, Math.min(entry.word.length, 4)).toLowerCase()
-      : entry.word.toLowerCase()
+    normalizedWord.length >= 3
+      ? normalizedWord.slice(1, Math.min(normalizedWord.length, 4))
+      : normalizedWord
 
   const definedTermSchema = {
     '@context': 'https://schema.org',
     '@type': 'DefinedTerm',
     name: entry.word,
-    description: entry.definition,
+    description:
+      entry.definition || `Dictionary and word-game information for ${entry.word}.`,
     url,
     inDefinedTermSet: {
       '@type': 'DefinedTermSet',
       name: 'UnscrambleHQ English Word Dictionary',
-      url: siteUrl,
+      url: SITE_URL,
     },
   }
 
@@ -89,11 +122,16 @@ export default async function WordPage({ params }: PageProps) {
     '@context': 'https://schema.org',
     '@type': 'BreadcrumbList',
     itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Home', item: siteUrl },
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: SITE_URL,
+      },
       {
         '@type': 'ListItem',
         position: 2,
-        name: entry.word.toUpperCase(),
+        name: displayWord,
         item: url,
       },
     ],
@@ -105,110 +143,165 @@ export default async function WordPage({ params }: PageProps) {
 
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(definedTermSchema) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(definedTermSchema),
+        }}
       />
 
-      <main className="bg-soft/40 py-12">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+
+      <main className="bg-soft/40 py-8 md:py-12">
         <div className="container-page">
-          <div className="mb-6 text-sm font-bold text-gray-500">
-            <Link href="/" className="hover:text-brand">Home</Link>
-            <span className="mx-2">/</span>
-            <span className="uppercase text-ink">{entry.word}</span>
-          </div>
+          <nav
+            aria-label="Breadcrumb"
+            className="mb-6 text-sm font-bold text-gray-500"
+          >
+            <Link href="/" className="transition hover:text-brand">
+              Home
+            </Link>
+
+            <span className="mx-2" aria-hidden="true">
+              /
+            </span>
+
+            <span aria-current="page" className="uppercase text-ink">
+              {entry.word}
+            </span>
+          </nav>
 
           <WordHero word={entry} />
 
-          <section className="mt-10 grid gap-4 md:grid-cols-4">
-            <StatCard label="Scrabble Score" value={stats.score} />
-            <StatCard label="Letters" value={stats.length} />
-            <StatCard label="Vowels" value={stats.vowels} />
-            <StatCard label="Consonants" value={stats.consonants} />
-          </section>
+          <section
+            aria-labelledby="related-searches-heading"
+            className="mt-8 rounded-3xl border border-line bg-white p-6"
+          >
+            <h2
+              id="related-searches-heading"
+              className="text-xl font-black text-ink"
+            >
+              Related Searches
+            </h2>
 
-          <section className="mt-10 grid gap-6 lg:grid-cols-3">
-            <div className="rounded-3xl border border-line bg-white p-6 lg:col-span-2">
-              <h2 className="text-2xl font-black text-ink">Word Intelligence</h2>
+            <div className="mt-4 grid gap-3 text-sm font-bold sm:grid-cols-2 lg:grid-cols-5">
+              <RelatedSearch
+                href={`/?letters=${encodeURIComponent(normalizedWord)}`}
+                label={`Unscramble ${displayWord}`}
+              />
 
-              <p className="mt-3 text-sm leading-6 text-gray-600">
-                Explore the word <span className="font-bold uppercase text-ink">{entry.word}</span> with its definition, score, letter pattern, and useful word game details.
-              </p>
+              <RelatedSearch
+                href={`/${stats.length}-letter-words`}
+                label={`${stats.length} Letter Words`}
+              />
 
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <Info label="Definition" value={entry.definition || 'Definition coming soon.'} />
-                <Info label="Length" value={`${stats.length} letters`} />
-                <Info label="Starts With" value={stats.firstLetter.toUpperCase()} />
-                <Info label="Ends With" value={stats.lastLetter.toUpperCase()} />
-                <Info label="Vowels" value={stats.vowels} />
-                <Info label="Consonants" value={stats.consonants} />
-                <Info label="Letters" value={entry.word.split('').join(', ').toUpperCase()} />
-                <Info label="Use Case" value="Useful for Scrabble, Wordle, crosswords, anagrams, and other word games." />
-              </div>
-            </div>
+              <RelatedSearch
+                href={`/words-starting-with-${startsWithTwo}`}
+                label={`Starts with ${startsWithTwo.toUpperCase()}`}
+              />
 
-            <aside className="rounded-3xl border border-line bg-white p-6">
-              <h2 className="text-xl font-black text-ink">Related Searches</h2>
+              <RelatedSearch
+                href={`/words-ending-in-${endsWithTwo}`}
+                label={`Ends with ${endsWithTwo.toUpperCase()}`}
+              />
 
-              <div className="mt-4 grid gap-3 text-sm font-bold">
-                <RelatedSearch href="/" label={`Unscramble ${entry.word}`} />
-                <RelatedSearch href={`/${stats.length}-letter-words`} label={`${stats.length} Letter Words`} />
-                <RelatedSearch href={`/words-starting-with-${startsWithTwo}`} label={`Words starting with ${startsWithTwo.toUpperCase()}`} />
-                <RelatedSearch href={`/words-ending-in-${endsWithTwo}`} label={`Words ending with ${endsWithTwo.toUpperCase()}`} />
-                <RelatedSearch href={`/words-containing-${containsMiddle}`} label={`Words containing ${containsMiddle.toUpperCase()}`} />
-              </div>
-            </aside>
-          </section>
-
-          <section className="mt-10 rounded-3xl border border-line bg-white p-6">
-            <h2 className="text-2xl font-black text-ink">Letter Breakdown</h2>
-
-            <div className="mt-5 flex flex-wrap gap-3">
-              {entry.word.split('').map((letter, index) => (
-                <div
-                  key={`${letter}-${index}`}
-                  className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft text-lg font-black uppercase text-ink"
-                >
-                  {letter}
-                </div>
-              ))}
+              <RelatedSearch
+                href={`/words-containing-${containsMiddle}`}
+                label={`Contains ${containsMiddle.toUpperCase()}`}
+              />
             </div>
           </section>
-<WordFacts word={entry.word} />
 
-<WordStrategy word={entry.word} />
+          <section aria-labelledby="learn-heading" className="mt-14">
+            <SectionHeading
+              id="learn-heading"
+              eyebrow="Learn"
+              title={`Understand ${displayWord}`}
+              description="Review its letter structure, factual properties, usage signals, and practical word-game value."
+            />
 
-<LetterIntelligence word={entry.word} />
-<SimilarPatternWords word={entry.word} />
-<MostRelatedWords word={entry.word} />
-<WordGraphLinks word={entry.word} />
-<CrosswordIntelligence word={entry.word} />
-<WordFamilyGraph word={entry.word} />
-<RelatedWords words={related} />
-<WordStrategy word={entry.word} />
-<WordUsageInsights word={entry.word} />
-<WordIntelligenceLinks
-  word={entry.word}
-  length={stats.length}
-  score={stats.score}
-  vowels={stats.vowels}
-  consonants={stats.consonants}
-/>
-<WordFamilyLinks word={entry.word} />
+            <section
+              aria-labelledby="letter-breakdown-heading"
+              className="mt-8 rounded-3xl border border-line bg-white p-6"
+            >
+              <h3
+                id="letter-breakdown-heading"
+                className="text-2xl font-black text-ink"
+              >
+                Letter Breakdown
+              </h3>
 
-<SimilarScoreWords word={entry.word} score={stats.score} />
-<InternalLinkGrid
-  word={entry.word}
-  length={stats.length}
-  prefix={startsWithTwo}
-  suffix={endsWithTwo}
-  contains={containsMiddle}
-/>
-          
+              <div
+                className="mt-5 flex flex-wrap gap-3"
+                aria-label={`Letters in ${entry.word}`}
+              >
+                {normalizedWord.split('').map((letter, index) => (
+                  <span
+                    key={`${letter}-${index}`}
+                    className="flex h-12 w-12 items-center justify-center rounded-2xl bg-soft text-lg font-black uppercase text-ink"
+                  >
+                    {letter}
+                  </span>
+                ))}
+              </div>
+            </section>
 
-          <RelatedWords words={related} />
+            <WordFacts word={normalizedWord} />
+            <LetterIntelligence word={normalizedWord} />
+            <WordUsageInsights word={normalizedWord} />
+            <WordStrategy word={normalizedWord} />
+          </section>
+
+          <section aria-labelledby="explore-heading" className="mt-16">
+            <SectionHeading
+              id="explore-heading"
+              eyebrow="Explore"
+              title="Related Words and Patterns"
+              description="Explore closely related terms, shared letter patterns, comparable scores, and crossword connections."
+            />
+
+            <WordFamilyGraph word={normalizedWord} />
+            <MostRelatedWords word={normalizedWord} />
+            <RelatedWords words={relatedWords} />
+            <SimilarPatternWords word={normalizedWord} />
+            <SimilarScoreWords
+              word={normalizedWord}
+              score={stats.score}
+            />
+            <CrosswordIntelligence word={normalizedWord} />
+          </section>
+
+          <section aria-labelledby="continue-heading" className="mt-16">
+            <SectionHeading
+              id="continue-heading"
+              eyebrow="Continue"
+              title="Keep Exploring UnscrambleHQ"
+              description="Use these word families, intelligence paths, and curated word lists to continue exploring."
+            />
+
+            <WordGraphLinks word={normalizedWord} />
+
+            <WordIntelligenceLinks
+              word={normalizedWord}
+              length={stats.length}
+              score={stats.score}
+              vowels={stats.vowels}
+              consonants={stats.consonants}
+            />
+
+            <WordFamilyLinks word={normalizedWord} />
+
+            <InternalLinkGrid
+              word={normalizedWord}
+              length={stats.length}
+              prefix={startsWithTwo}
+              suffix={endsWithTwo}
+              contains={containsMiddle}
+            />
+          </section>
         </div>
       </main>
 
@@ -217,27 +310,38 @@ export default async function WordPage({ params }: PageProps) {
   )
 }
 
-function StatCard({ label, value }: { label: string; value: string | number }) {
+function SectionHeading({
+  id,
+  eyebrow,
+  title,
+  description,
+}: SectionHeadingProps) {
   return (
-    <div className="rounded-3xl border border-line bg-white p-5">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-2 text-3xl font-black text-ink">{value}</p>
-    </div>
+    <header className="max-w-3xl">
+      <p className="text-sm font-black uppercase tracking-[0.18em] text-brand">
+        {eyebrow}
+      </p>
+
+      <h2
+        id={id}
+        className="mt-2 text-3xl font-black tracking-tight text-ink md:text-4xl"
+      >
+        {title}
+      </h2>
+
+      <p className="mt-3 text-base leading-7 text-gray-600">
+        {description}
+      </p>
+    </header>
   )
 }
 
-function Info({ label, value }: { label: string; value: string | number }) {
+function RelatedSearch({ href, label }: RelatedSearchProps) {
   return (
-    <div className="rounded-2xl bg-soft p-5">
-      <p className="text-xs font-extrabold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className="mt-2 text-sm leading-6 text-gray-700">{value}</p>
-    </div>
-  )
-}
-
-function RelatedSearch({ href, label }: { href: string; label: string }) {
-  return (
-    <Link href={href} className="rounded-2xl bg-soft px-4 py-3 hover:text-brand">
+    <Link
+      href={href}
+      className="rounded-2xl bg-soft px-4 py-3 transition hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+    >
       {label}
     </Link>
   )
