@@ -8,9 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "analytics:build": "node scripts/build-analytics-data.mjs",
-    "patch:001": "bash patches/patch-001-search.sh",
-    "typecheck": "tsc --noEmit",
-    "adsense:verify": "node scripts/verify-adsense.mjs"
+    "patch:001": "bash patches/patch-001-search.sh"
   },
   "dependencies": {
     "@next/third-parties": "latest",
