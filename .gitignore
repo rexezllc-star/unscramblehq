@@ -26,3 +26,5 @@ yarn-error.log*
 
 *.zip
 .DS_Store
+.patch-backups/
+*.tsbuildinfo

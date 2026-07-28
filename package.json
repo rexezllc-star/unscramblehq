@@ -10,7 +10,9 @@
     "analytics:build": "node scripts/build-analytics-data.mjs",
     "patch:001": "bash patches/patch-001-search.sh",
     "typecheck": "tsc --noEmit",
-    "adsense:verify": "node scripts/verify-adsense.mjs"
+    "adsense:verify": "node scripts/verify-adsense.mjs",
+    "production:verify": "node scripts/verify-production-hardening.mjs",
+    "verify:all": "npm run production:verify && npm run adsense:verify && npm run typecheck && npm run lint"
   },
   "dependencies": {
     "@next/third-parties": "latest",
