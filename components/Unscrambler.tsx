@@ -1,5 +1,8 @@
 'use client'
 
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
+
 import {
   useCallback,
   useDeferredValue,
@@ -59,6 +62,9 @@ function groupResultsByLength(
 }
 
 export function Unscrambler() {
+  const router = useRouter()
+  const pathname = usePathname()
+
   const [letters, setLetters] = useState('')
   const [submitted, setSubmitted] = useState('')
 
@@ -67,6 +73,7 @@ export function Unscrambler() {
   })
 
   const [results, setResults] = useState<SearchResult[]>([])
+  const [exactMatch, setExactMatch] = useState<SearchResult | null>(null)
   const [visibleLimit, setVisibleLimit] = useState(
     INITIAL_RESULT_LIMIT
   )
@@ -86,6 +93,24 @@ export function Unscrambler() {
 
   const deferredSubmitted = useDeferredValue(submitted)
   const deferredFilters = useDeferredValue(filters)
+
+  /**
+   * Exact dictionary navigation belongs to the general Word Finder.
+   * Dedicated tools keep their normal anagram/Scrabble/Wordle behavior.
+   */
+  const exactNavigationEnabled =
+    pathname === '/word-finder'
+
+  const hasConstrainedFilters = Boolean(
+    deferredFilters.minLength ||
+      deferredFilters.maxLength ||
+      deferredFilters.exactLength ||
+      deferredFilters.startsWith ||
+      deferredFilters.endsWith ||
+      deferredFilters.contains ||
+      deferredFilters.excludes ||
+      deferredFilters.minScore
+  )
 
   /**
    * Loads the heavy dictionary/search module only when needed.
@@ -210,6 +235,7 @@ export function Unscrambler() {
       latestSearchIdRef.current += 1
 
       setResults([])
+      setExactMatch(null)
       setEngineLoading(false)
       setSearchError('')
 
@@ -249,6 +275,37 @@ export function Unscrambler() {
           return
         }
 
+        const normalizedInput = deferredSubmitted
+          .trim()
+          .toLowerCase()
+
+        const isPlainWord = /^[a-z]+$/.test(
+          normalizedInput
+        )
+
+        const matchingEntry = isPlainWord
+          ? matches.find(
+              (entry) =>
+                entry.word.toLowerCase() ===
+                normalizedInput
+            ) ?? null
+          : null
+
+        setExactMatch(matchingEntry)
+
+        if (
+          matchingEntry &&
+          exactNavigationEnabled &&
+          !hasConstrainedFilters
+        ) {
+          router.push(
+            `/word/${encodeURIComponent(
+              matchingEntry.word.toLowerCase()
+            )}`
+          )
+          return
+        }
+
         setResults(matches)
       } catch (error: unknown) {
         console.error('Word search failed:', error)
@@ -260,6 +317,7 @@ export function Unscrambler() {
           searchId === latestSearchIdRef.current
         ) {
           setResults([])
+          setExactMatch(null)
           setSearchError(
             'The search engine could not be loaded. Please try again.'
           )
@@ -282,7 +340,10 @@ export function Unscrambler() {
   }, [
     deferredSubmitted,
     deferredFilters,
+    exactNavigationEnabled,
+    hasConstrainedFilters,
     loadSearchEngine,
+    router,
   ])
 
   const visibleResults = useMemo(
@@ -337,6 +398,7 @@ export function Unscrambler() {
 
     setLetters(clean)
     setVisibleLimit(INITIAL_RESULT_LIMIT)
+    setExactMatch(null)
     setSearchError('')
 
     const params = new URLSearchParams(
@@ -362,6 +424,7 @@ export function Unscrambler() {
     setLetters('')
     setSubmitted('')
     setResults([])
+    setExactMatch(null)
     setEngineLoading(false)
     setSearchError('')
     setShowFilters(false)
@@ -575,6 +638,12 @@ export function Unscrambler() {
                 </p>
               </div>
 
+              {exactMatch ? (
+                <ExactDictionaryMatch
+                  result={exactMatch}
+                />
+              ) : null}
+
               <BestPlays results={results} />
 
               {lengths.map((length) => (
@@ -627,6 +696,50 @@ export function Unscrambler() {
             body="Filter by exact length 5, then add contains, starts with, ends with, and excluded letters."
           />
         </aside>
+      </div>
+    </section>
+  )
+}
+
+
+function ExactDictionaryMatch({
+  result,
+}: {
+  result: SearchResult
+}) {
+  const normalizedWord =
+    result.word.toLowerCase()
+
+  return (
+    <section className="rounded-3xl border border-brand/25 bg-white p-6 shadow-sm">
+      <p className="text-xs font-black uppercase tracking-[0.18em] text-brand">
+        Exact Dictionary Match
+      </p>
+
+      <div className="mt-3 flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h3 className="text-3xl font-black uppercase tracking-tight text-ink">
+            {result.word}
+          </h3>
+
+          <p className="mt-2 max-w-3xl leading-7 text-gray-600">
+            {result.definition ||
+              'Open the dictionary page for definitions and complete word details.'}
+          </p>
+
+          <p className="mt-3 text-sm font-bold text-gray-500">
+            {result.length} letters · Scrabble {result.score} · WWF {result.wwfScore}
+          </p>
+        </div>
+
+        <Link
+          href={`/word/${encodeURIComponent(
+            normalizedWord
+          )}`}
+          className="inline-flex min-h-12 shrink-0 items-center justify-center rounded-2xl bg-brand px-6 py-3 font-bold text-white transition hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2"
+        >
+          View Dictionary Entry
+        </Link>
       </div>
     </section>
   )
