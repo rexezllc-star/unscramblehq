@@ -6,13 +6,16 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint .",
+    "lint": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js app components lib scripts --cache --cache-location .cache/eslint/.eslintcache",
     "analytics:build": "node scripts/build-analytics-data.mjs",
     "patch:001": "bash patches/patch-001-search.sh",
     "typecheck": "tsc --noEmit",
     "adsense:verify": "node scripts/verify-adsense.mjs",
     "production:verify": "node scripts/verify-production-hardening.mjs",
-    "verify:all": "npm run production:verify && npm run adsense:verify && npm run typecheck && npm run lint"
+    "verify:all": "npm run production:verify && npm run adsense:verify && npm run typecheck && npm run lint",
+    "lint:ci": "node --max-old-space-size=4096 ./node_modules/eslint/bin/eslint.js app components lib scripts --max-warnings=0",
+    "release:verify": "node scripts/verify-release-006.mjs",
+    "release:build": "npm run release:verify && npm run typecheck && npm run lint:ci && npm run build"
   },
   "dependencies": {
     "@next/third-parties": "latest",

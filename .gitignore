@@ -24,7 +24,8 @@ yarn-error.log*
 .env.production.local
 *.zip
 
-*.zip
-.DS_Store
 .patch-backups/
 *.tsbuildinfo
+
+# Release 006 generated tooling
+.cache/

@@ -1,15 +1,21 @@
 import { defineConfig, globalIgnores } from 'eslint/config'
 import nextVitals from 'eslint-config-next/core-web-vitals'
-import nextTypeScript from 'eslint-config-next/typescript'
+import nextTs from 'eslint-config-next/typescript'
 
 export default defineConfig([
   ...nextVitals,
-  ...nextTypeScript,
+  ...nextTs,
   globalIgnores([
     '.next/**',
-    'out/**',
-    'build/**',
-    'next-env.d.ts',
+    'node_modules/**',
     '.patch-backups/**',
+    '.cache/**',
+    'coverage/**',
+    'dist/**',
+    'out/**',
+    'data/**',
+    'public/**',
+    '*.tsbuildinfo',
+    'next-env.d.ts',
   ]),
 ])
